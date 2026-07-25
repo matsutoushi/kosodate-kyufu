@@ -17,7 +17,7 @@ SITE_NAME = "こそだて給付ナビ"
 TAGLINE = "子育て世帯が“もらえるお金”を、ムダなく受け取るための地図"
 DOMAIN = "kosodate-kyufu.com"
 BASE_URL = f"https://{DOMAIN}"
-GA4_ID = ""  # 新規GA4プロパティの測定ID(G-XXXXXXXXXX)を入れると全ページに自動反映
+GA4_ID = "G-ZW9ZH2FCPS"  # GA4測定ID。ここ1箇所で全ページに反映される
 
 # ---- 共通パーツ -------------------------------------------------------------
 
