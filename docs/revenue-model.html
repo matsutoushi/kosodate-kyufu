@@ -1,0 +1,187 @@
+<title>収益シミュレーター｜子育てお得サイト</title>
+<style>
+:root{--bg:#fffdf9;--card:#fff;--ink:#2b2b33;--sub:#6b6b76;--brand:#ff8a65;--brand-d:#f4643b;--accent:#4db6ac;--line:#efe7dd}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1a1f;--card:#25242b;--ink:#ece9e4;--sub:#a09aa6;--line:#3a3742}}
+:root[data-theme="dark"]{--bg:#1b1a1f;--card:#25242b;--ink:#ece9e4;--sub:#a09aa6;--line:#3a3742}
+:root[data-theme="light"]{--bg:#fffdf9;--card:#fff;--ink:#2b2b33;--sub:#6b6b76;--line:#efe7dd}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+.wrap{max-width:820px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:1.5rem;margin:.2em 0}
+h2{font-size:1.1rem;margin:32px 0 10px;padding-left:10px;border-left:5px solid var(--brand)}
+.lead{color:var(--sub);font-size:.93rem}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:14px 0}
+.row{display:flex;align-items:center;gap:12px;margin:14px 0;flex-wrap:wrap}
+.row label{flex:1;min-width:190px;font-size:.92rem}
+.row input[type=range]{flex:2;min-width:180px;accent-color:var(--brand)}
+.row .val{font-weight:800;color:var(--brand-d);min-width:90px;text-align:right}
+.out{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:16px 0}
+.out div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+.out .v{font-size:1.5rem;font-weight:800;color:var(--brand-d)}
+.out .l{font-size:.74rem;color:var(--sub)}
+.big{background:linear-gradient(135deg,#ffd9c9,#ffe9dc);color:#7a3f22;border-radius:16px;padding:20px;text-align:center;margin:18px 0}
+.big .v{font-size:2.1rem;font-weight:800}
+.big .l{font-size:.82rem}
+table{width:100%;border-collapse:collapse;font-size:.88rem;margin:10px 0;display:block;overflow-x:auto;white-space:nowrap}
+th,td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left}
+th{color:var(--sub);font-size:.79rem}
+td.num{text-align:right}
+.note{background:rgba(77,182,172,.1);border-left:4px solid var(--accent);padding:12px 14px;border-radius:8px;font-size:.87rem;margin:14px 0}
+.warn{background:rgba(244,100,59,.09);border-left:4px solid var(--brand-d);padding:12px 14px;border-radius:8px;font-size:.87rem;margin:14px 0}
+.src{font-size:.78rem;color:var(--sub)}
+ul{padding-left:1.2em}li{margin:.35em 0;font-size:.92rem}
+</style>
+
+<div class="wrap">
+<h1>収益シミュレーター</h1>
+<p class="lead">「このサイトはどう稼ぐのか」を、計算式を全部見える形にしたものです。<br>
+スライダーを動かすと結果が変わります。<strong>数字は希望ではなく、根拠のある範囲で置いています。</strong></p>
+
+<h2>1. 前提となる実単価(調査済み)</h2>
+<div class="panel">
+<table>
+<tr><th>案件</th><th>成果条件</th><th class="num">単価</th><th>出典・備考</th></tr>
+<tr><td>ふるさと納税(さとふる等)</td><td>寄付完了</td><td class="num">寄付額の約1〜1.1%</td><td>バリューコマース。A8はさとふる固定320円/件</td></tr>
+<tr><td>クレジットカード発行</td><td>カード発行</td><td class="num">5,000〜15,000円</td><td>楽天カード5,000〜8,000／三井住友NL 8,000〜12,000</td></tr>
+<tr><td>格安SIM・電気ガス</td><td>申込・開通</td><td class="num">数千円</td><td>案件により差が大きい</td></tr>
+<tr><td>AdSense(広告)</td><td>表示・クリック</td><td class="num">約0.1〜0.4円/PV</td><td>日本のRPM目安 100〜400円/1,000PV</td></tr>
+</table>
+<div class="warn"><strong>重要:</strong> クレカは単価が高い一方、給付金を調べに来た読者が発行まで進む率は低いです。
+「情報を読む人」と「申し込む人」は別だという前提で、低めの成約率を置いています。</div>
+</div>
+
+<h2>2. 条件を動かしてみる</h2>
+<div class="panel">
+  <div class="row">
+    <label>Instagram フォロワー数</label>
+    <input type="range" id="f" min="0" max="20000" step="500" value="3000">
+    <span class="val" id="fv"></span>
+  </div>
+  <div class="row">
+    <label>月あたりサイト流入(PV)<br><span class="src">※フォロワー数から自動計算。手動でも調整可</span></label>
+    <input type="range" id="pv" min="0" max="30000" step="250" value="3000">
+    <span class="val" id="pvv"></span>
+  </div>
+  <div class="row">
+    <label>ふるさと納税:比較ページを見た人のうち申込む率</label>
+    <input type="range" id="fr" min="0" max="30" step="1" value="6">
+    <span class="val" id="frv"></span>
+  </div>
+  <div class="row">
+    <label>平均寄付額(円)</label>
+    <input type="range" id="fa" min="10000" max="100000" step="5000" value="30000">
+    <span class="val" id="fav"></span>
+  </div>
+  <div class="row">
+    <label>クレカ:PVあたり発行に至る率(‰=千分率)</label>
+    <input type="range" id="cr" min="0" max="20" step="1" value="2">
+    <span class="val" id="crv"></span>
+  </div>
+  <div class="row">
+    <label>クレカ単価(円)</label>
+    <input type="range" id="cp" min="2000" max="15000" step="500" value="6000">
+    <span class="val" id="cpv"></span>
+  </div>
+  <div class="row">
+    <label>AdSense を使う(PVあたり0.2円)</label>
+    <input type="checkbox" id="ad" style="width:20px;height:20px;accent-color:var(--brand)">
+  </div>
+</div>
+
+<div class="big"><div class="l">この条件での月間収益(目安)</div><div class="v" id="total">—</div>
+<div class="l" id="yearly"></div></div>
+
+<div class="out">
+  <div><div class="v" id="o_f">—</div><div class="l">ふるさと納税</div></div>
+  <div><div class="v" id="o_c">—</div><div class="l">クレジットカード</div></div>
+  <div><div class="v" id="o_a">—</div><div class="l">AdSense</div></div>
+</div>
+<div class="note" id="detail"></div>
+
+<h2>3. 現実的な成長シナリオ</h2>
+<div class="panel">
+<p class="lead">ゼロからInstagramを育てた場合の目安です。<strong>楽観・悲観の両方</strong>を出します。</p>
+<table>
+<tr><th>時期</th><th class="num">フォロワー</th><th class="num">月間PV</th><th class="num">月収(控えめ)</th><th class="num">月収(うまくいけば)</th></tr>
+<tr><td>1〜3か月目</td><td class="num">0 → 500</td><td class="num">〜300</td><td class="num">0〜500円</td><td class="num">〜2,000円</td></tr>
+<tr><td>6か月目</td><td class="num">1,500〜3,000</td><td class="num">1,000〜3,000</td><td class="num">1,000〜3,000円</td><td class="num">1〜2万円</td></tr>
+<tr><td>12か月目</td><td class="num">4,000〜10,000</td><td class="num">3,000〜10,000</td><td class="num">3,000〜1万円</td><td class="num">3〜8万円</td></tr>
+<tr><td>11〜12月<br>(ふるさと納税期)</td><td class="num">—</td><td class="num">2〜3倍</td><td class="num">—</td><td class="num">この2か月だけ跳ねる</td></tr>
+</table>
+<div class="warn"><strong>正直に言うと:</strong> 副業サイトの多くは「1〜3か月目」で止まります。
+伸びるかどうかを分けるのは記事の量ではなく、<strong>Instagramを続けられるか</strong>です。
+上の表の「うまくいけば」は、週2〜3回の投稿を1年続けられた場合の話です。</div>
+</div>
+
+<h2>4. この試算の弱点(隠さずに)</h2>
+<div class="panel">
+<ul>
+<li><strong>Instagram→サイトの導線は弱い。</strong> 投稿に直接リンクを貼れず、プロフィールのリンク頼み。既存Xサイトの実測でも流入転換は約1%でした。</li>
+<li><strong>読者と購買者がズレる。</strong> 「児童手当を調べたい人」がクレカを作る率は低い。だから単価の高いクレカを主軸に置いた計画は当てが外れやすいです。</li>
+<li><strong>ふるさと納税は季節商売。</strong> 11〜12月に大きく偏ります。年間で均すと月あたりは小さく見えます。</li>
+<li><strong>AdSenseは天井が低い。</strong> 月3万円を広告だけで出すには約10万PVが必要で、後発のこのジャンルでは非現実的です。</li>
+<li><strong>SEOは当てにできない。</strong> 公金・お金の情報は Google が信頼性を重視する領域(YMYL)で、個人の後発サイトが検索上位を取るのは困難です。</li>
+</ul>
+<div class="note"><strong>だからこその設計:</strong> 収益はアフィリエイト(比較ページ)、集客はInstagram、
+差別化は「全1,740市区町村の医療費データ」のような<strong>他がやっていない具体性</strong>。
+広告収入は“下支え”として後から足す、という順番になります。</div>
+</div>
+
+<h2>5. 初期コスト</h2>
+<div class="panel">
+<table>
+<tr><th>項目</th><th class="num">費用</th><th>備考</th></tr>
+<tr><td>独自ドメイン</td><td class="num">年1,000〜1,500円</td><td>ASP審査のため必須(github.ioは不利)</td></tr>
+<tr><td>GitHub Pages</td><td class="num">0円</td><td>ホスティング無料</td></tr>
+<tr><td>ASP登録</td><td class="num">0円</td><td>A8・アクセストレードは登録済み</td></tr>
+<tr><td class="num"><strong>合計</strong></td><td class="num"><strong>年1,000〜1,500円</strong></td><td>回収は現実的なライン</td></tr>
+</table>
+<div class="note">初期費用は<strong>ほぼドメイン代だけ</strong>。月数千円でも収益が出れば回収できます。
+損失リスクは小さく、かかるのは主に「時間」です。</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const yen=n=>'¥'+Math.round(n).toLocaleString();
+let pvTouched=false;
+$('pv').addEventListener('input',()=>{pvTouched=true;calc();});
+['f','fr','fa','cr','cp'].forEach(id=>$(id).addEventListener('input',calc));
+$('ad').addEventListener('change',calc);
+
+function calc(){
+  const f=+$('f').value;
+  // フォロワー→PVの目安: フォロワーの約1割/月がサイトに来る(既存実測の転換率をもとに控えめに)
+  if(!pvTouched){ $('pv').value = Math.min(30000, Math.round(f*1.0/250)*250); }
+  const pv=+$('pv').value;
+  const fr=+$('fr').value, fa=+$('fa').value, cr=+$('cr').value, cp=+$('cp').value;
+
+  $('fv').textContent=f.toLocaleString()+'人';
+  $('pvv').textContent=pv.toLocaleString()+'PV';
+  $('frv').textContent=fr+'%';
+  $('fav').textContent=yen(fa);
+  $('crv').textContent=cr+'‰';
+  $('cpv').textContent=yen(cp);
+
+  // ふるさと納税: PVの15%が比較ページに到達 → fr% が申込 → 寄付額の1%
+  const toHikaku=pv*0.15;
+  const furuCount=toHikaku*fr/100;
+  const furu=furuCount*fa*0.01;
+  // クレカ: PV × cr‰ × 単価
+  const cardCount=pv*cr/1000;
+  const card=cardCount*cp;
+  // AdSense
+  const ad=$('ad').checked? pv*0.2 : 0;
+
+  const total=furu+card+ad;
+  $('o_f').textContent=yen(furu);
+  $('o_c').textContent=yen(card);
+  $('o_a').textContent=yen(ad);
+  $('total').textContent=yen(total);
+  $('yearly').textContent='年間なら約 '+yen(total*12)+'(季節変動を除く単純12倍)';
+  $('detail').innerHTML='内訳: 比較ページ到達 '+Math.round(toHikaku).toLocaleString()+'人 → ふるさと納税 <strong>'
+    +furuCount.toFixed(1)+'件</strong>／クレカ発行 <strong>'+cardCount.toFixed(1)+'件</strong>'
+    +(ad?'／AdSense '+pv.toLocaleString()+'PV':'');
+}
+calc();
+</script>
+</div>
