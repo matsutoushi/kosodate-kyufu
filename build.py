@@ -18,6 +18,7 @@ TAGLINE = "子育て世帯が“もらえるお金”を、ムダなく受け取
 DOMAIN = "kosodate-kyufu.com"
 BASE_URL = f"https://{DOMAIN}"
 GA4_ID = "G-ZW9ZH2FCPS"  # GA4測定ID。ここ1箇所で全ページに反映される
+GSC_TOKEN = "q0qAeAIxlo6jsG2oXXGQfxLfMg-FL-Gf--5B3YYFuDQ"  # Search Console 所有権確認
 
 # ---- 共通パーツ -------------------------------------------------------------
 
@@ -41,6 +42,7 @@ def head(title, desc, path="/"):
 <meta property="og:url" content="{BASE_URL}{path}">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
+{f'<meta name="google-site-verification" content="{GSC_TOKEN}">' if GSC_TOKEN else ''}
 {ga}
 <style>{CSS}</style>
 </head>
@@ -134,6 +136,7 @@ def footer():
 </div>
 <footer><div class="wrap">
   {html.escape(SITE_NAME)} ／ <a href="./index.html">ホーム</a> ・ <a href="./shindan.html">もらえるお金しんだん</a> ・ <a href="./chiiki.html">地域別で調べる</a><br>
+  <a href="./policy.html">プライバシーポリシー・免責事項・運営者情報</a><br>
   出典は各制度ページの公式リンクをご確認ください。
 </div></footer>
 </body></html>"""
@@ -367,6 +370,67 @@ q.addEventListener('input', draw);
     return "".join(parts)
 
 
+def build_policy():
+    """プライバシーポリシー・免責事項・運営者情報。ASP審査とGA4利用のために必須。"""
+    parts = [head(f"プライバシーポリシー・運営者情報｜{SITE_NAME}",
+                  f"{SITE_NAME}のプライバシーポリシー、免責事項、運営者情報です。", "/policy.html")]
+    parts.append(f"""
+<header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+<div class="wrap body">
+  <a class="back" href="./index.html">← ホーム</a>
+  <h1 style="font-size:1.3rem">プライバシーポリシー・免責事項</h1>
+
+  <div class="sec-title">当サイトについて</div>
+  <p>{html.escape(SITE_NAME)}(以下「当サイト」)は、子育て世帯が利用できる国や自治体の支援制度について、
+  公的機関が公表している情報をもとに、わかりやすく整理して提供する情報サイトです。</p>
+
+  <div class="sec-title">アクセス解析ツールについて</div>
+  <p>当サイトでは、サイトの利用状況を把握するためにGoogleアナリティクス(Google LLC提供)を利用しています。
+  Googleアナリティクスはトラフィックデータの収集のためにCookieを使用しますが、
+  このデータは匿名で収集されており、個人を特定するものではありません。</p>
+  <p>この機能はブラウザの設定でCookieを無効にすることで収集を拒否できます。
+  詳しくは<a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Googleのポリシーと規約</a>をご確認ください。</p>
+
+  <div class="sec-title">広告について</div>
+  <p>当サイトでは、第三者配信のアフィリエイトプログラムを利用しています。
+  これにより、広告主から支払われる成果報酬を得る場合があります。
+  当該ページには、その旨を「本ページはプロモーションを含みます」等の表記で明示しています。</p>
+  <p>アフィリエイトプログラムにおいて、広告配信事業者がCookieを使用して
+  利用者の当サイトへの過去のアクセス情報に基づいて広告を配信することがあります。</p>
+
+  <div class="sec-title">免責事項</div>
+  <p>当サイトに掲載する情報は、公的機関の公表資料をもとに、可能な限り正確を期して作成しています。
+  ただし、制度の内容・金額・対象条件は法改正や年度の切り替え、お住まいの自治体によって異なり、
+  また変更される場合があります。</p>
+  <p><strong>当サイトの情報は制度の概要をつかむための参考情報であり、
+  申請の可否や受給額を保証するものではありません。</strong>
+  実際の申請にあたっては、必ず各制度の公式ページおよびお住まいの市区町村の窓口で
+  最新かつ正確な情報をご確認ください。</p>
+  <p>当サイトの情報を利用したことにより生じたいかなる損害についても、当サイトは責任を負いかねます。
+  また、当サイトは特定の金融商品・サービスの購入や申込みを勧誘するものではなく、
+  投資助言・税務相談・法律相談を行うものではありません。</p>
+
+  <div class="sec-title">著作権について</div>
+  <p>当サイトが引用・参照する公的機関の公表資料の著作権は、各機関に帰属します。
+  当サイトは各情報の出典を明示し、公式ページへのリンクを掲載しています。</p>
+
+  <div class="sec-title">リンクについて</div>
+  <p>当サイトは原則リンクフリーです。リンクを行う場合の許可・連絡は不要です。</p>
+
+  <div class="sec-title">運営者情報</div>
+  <dl>
+    <dt>サイト名</dt><dd>{html.escape(SITE_NAME)}</dd>
+    <dt>URL</dt><dd>{BASE_URL}</dd>
+    <dt>運営者</dt><dd>matsuto</dd>
+    <dt>お問い合わせ</dt><dd>お問い合わせは <a href="mailto:tomo0829.m@gmail.com">tomo0829.m@gmail.com</a> までご連絡ください。</dd>
+  </dl>
+
+  <p style="font-size:.78rem;color:#a99;margin-top:20px">制定日: 2026年7月25日</p>
+</div>""")
+    parts.append(footer())
+    return "".join(parts)
+
+
 def build_hikaku(pg):
     """比較ページ(収益エンジン)。PR表記を明示し、公式情報へのリンクも併記する。"""
     parts = [head(f"{pg['title']}｜{SITE_NAME}", pg["lead"][:100], f"/{pg['id']}.html")]
@@ -445,13 +509,15 @@ def main():
             f.write(build_program(p, data))
     with open(os.path.join(SITE, "shindan.html"), "w", encoding="utf-8") as f:
         f.write(build_shindan(data))
+    with open(os.path.join(SITE, "policy.html"), "w", encoding="utf-8") as f:
+        f.write(build_policy())
 
     # 独自ドメイン(GitHub Pages用)
     with open(os.path.join(SITE, "CNAME"), "w", encoding="utf-8") as f:
         f.write(DOMAIN + "\n")
 
     # sitemap.xml / robots.txt
-    pages = ["/", "/shindan.html", "/chiiki.html"]
+    pages = ["/", "/shindan.html", "/chiiki.html", "/policy.html"]
     pages += [f"/{p['id']}.html" for p in data["programs"]]
     if os.path.exists(hikaku_path):
         pages += [f"/{pg['id']}.html" for pg in json.load(open(hikaku_path, encoding="utf-8"))["pages"]]
