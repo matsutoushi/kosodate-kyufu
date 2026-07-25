@@ -136,7 +136,7 @@ def footer():
 </div>
 <footer><div class="wrap">
   {html.escape(SITE_NAME)} ／ <a href="./index.html">ホーム</a> ・ <a href="./shindan.html">もらえるお金しんだん</a> ・ <a href="./chiiki.html">地域別で調べる</a><br>
-  <a href="./policy.html">プライバシーポリシー・免責事項・運営者情報</a><br>
+  <a href="./policy.html">プライバシーポリシー・免責事項</a><br>
   出典は各制度ページの公式リンクをご確認ください。
 </div></footer>
 </body></html>"""
@@ -371,9 +371,9 @@ q.addEventListener('input', draw);
 
 
 def build_policy():
-    """プライバシーポリシー・免責事項・運営者情報。ASP審査とGA4利用のために必須。"""
-    parts = [head(f"プライバシーポリシー・運営者情報｜{SITE_NAME}",
-                  f"{SITE_NAME}のプライバシーポリシー、免責事項、運営者情報です。", "/policy.html")]
+    """プライバシーポリシー・免責事項。GA4のCookie利用とアフィリエイト表記のために必要。"""
+    parts = [head(f"プライバシーポリシー・免責事項｜{SITE_NAME}",
+                  f"{SITE_NAME}のプライバシーポリシーおよび免責事項です。", "/policy.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
 <div class="wrap body">
@@ -416,14 +416,6 @@ def build_policy():
 
   <div class="sec-title">リンクについて</div>
   <p>当サイトは原則リンクフリーです。リンクを行う場合の許可・連絡は不要です。</p>
-
-  <div class="sec-title">運営者情報</div>
-  <dl>
-    <dt>サイト名</dt><dd>{html.escape(SITE_NAME)}</dd>
-    <dt>URL</dt><dd>{BASE_URL}</dd>
-    <dt>運営者</dt><dd>matsuto</dd>
-    <dt>お問い合わせ</dt><dd>お問い合わせは <a href="mailto:tomo0829.m@gmail.com">tomo0829.m@gmail.com</a> までご連絡ください。</dd>
-  </dl>
 
   <p style="font-size:.78rem;color:#a99;margin-top:20px">制定日: 2026年7月25日</p>
 </div>""")
