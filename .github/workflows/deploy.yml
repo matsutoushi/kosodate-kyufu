@@ -15,7 +15,8 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # 混雑でキュー待ちが長いとき、後続pushが待機中の実行を打ち消してしまうため false
+  cancel-in-progress: false
 
 jobs:
   build:
