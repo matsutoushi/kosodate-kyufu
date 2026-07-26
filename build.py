@@ -185,13 +185,14 @@ def build_index(data):
   <div class="s">{html.escape(p['subtitle'])}</div>
   <div class="d">{html.escape(p['summary'][:70])}…</div>
 </a>""")
-    parts.append(f"""
-  <div class="sec-title">もらうだけじゃない、減らす工夫も</div>
-  <a class="card" href="./hikaku-furusato.html">
-    <div class="t">🎁 子育て世帯のふるさと納税、どこで申し込む?</div>
-    <div class="s">おむつ・お米など“必ず使うもの”で家計を軽くする</div>
-    <div class="d">実質2,000円の負担で返礼品がもらえる制度。選び方を整理しました →</div>
-  </a>""")
+    hk = data.get("_hikaku") or []
+    if hk:
+        parts.append('<div class="sec-title">もらうだけじゃない、減らす工夫も</div>')
+        for p in hk:
+            parts.append(f"""<a class="card" href="./{p['id']}.html">
+  <div class="t">{p.get('emoji','')} {html.escape(p.get('nav_title', p['title']))}</div>
+  <div class="d">{html.escape(p['lead'][:64])}… →</div>
+</a>""")
     parts.append("</div>")
     parts.append(footer())
     return "".join(parts)
@@ -423,7 +424,20 @@ def build_policy():
     return "".join(parts)
 
 
-def build_hikaku(pg):
+def hikaku_cards(pages, exclude=None):
+    """比較ページ同士の相互リンク(カード)。"""
+    out = []
+    for p in pages:
+        if p["id"] == exclude:
+            continue
+        out.append(f"""<a class="card" href="./{p['id']}.html">
+  <div class="t">{html.escape(p.get('nav_title', p['title']))}</div>
+  <div class="d">{html.escape(p['lead'][:60])}… →</div>
+</a>""")
+    return "".join(out)
+
+
+def build_hikaku(pg, all_pages=()):
     """比較ページ(収益エンジン)。PR表記を明示し、公式情報へのリンクも併記する。"""
     parts = [head(f"{pg['title']}｜{SITE_NAME}", pg["lead"][:100], f"/{pg['id']}.html")]
     parts.append(f"""
@@ -452,10 +466,11 @@ def build_hikaku(pg):
             parts.append(f"<li>{html.escape(c)}</li>")
         parts.append("</ul>")
         url = it.get("aff_url") or it.get("official")
-        label = "公式サイトを見る" if not it.get("aff_url") else f"{it['name']}で寄付先を探す"
-        parts.append(f'<a class="offbtn" href="{html.escape(url)}" target="_blank" rel="noopener sponsored">{html.escape(label)}</a>')
+        if url:
+            label = f"{it['name']}を見る" if it.get("aff_url") else "公式サイトを見る"
+            parts.append(f'<a class="offbtn" href="{html.escape(url)}" target="_blank" rel="noopener sponsored">{html.escape(label)}</a>')
         if not it.get("aff_url"):
-            parts.append('<div style="font-size:.7rem;color:#c9b8a8;margin-top:6px">※ASP提携後にアフィリエイトリンクへ差し替え</div>')
+            parts.append('<div style="font-size:.7rem;color:#c9b8a8;margin-top:8px">※提携後にリンクを掲載します</div>')
         parts.append("</div>")
 
     parts.append('<div class="sec-title">子育て世帯の選び方のコツ</div><ul class="tips">')
@@ -463,7 +478,12 @@ def build_hikaku(pg):
         parts.append(f"<li>{html.escape(t)}</li>")
     parts.append("</ul>")
     parts.append(f'<div class="note">⚠️ {html.escape(pg["caution"])}</div>')
-    parts.append(f'<a class="offbtn" href="{html.escape(pg["official_ref"])}" target="_blank" rel="noopener">🔗 総務省の公式ページ(制度の説明)</a>')
+    if pg.get("official_ref"):
+        parts.append(f'<a class="offbtn" href="{html.escape(pg["official_ref"])}" target="_blank" rel="noopener">🔗 公的機関の解説ページ</a>')
+    others = hikaku_cards(all_pages, exclude=pg["id"])
+    if others:
+        parts.append('<div class="sec-title">ほかの見直しも</div>')
+        parts.append(others)
     parts.append("</div>")
     parts.append(footer())
     return "".join(parts)
@@ -483,9 +503,10 @@ def main():
     hikaku_path = os.path.join(ROOT, "data", "hikaku.json")
     if os.path.exists(hikaku_path):
         hk = json.load(open(hikaku_path, encoding="utf-8"))
+        data["_hikaku"] = hk["pages"]
         for pg in hk["pages"]:
             with open(os.path.join(SITE, pg["id"] + ".html"), "w", encoding="utf-8") as f:
-                f.write(build_hikaku(pg))
+                f.write(build_hikaku(pg, hk["pages"]))
         print(f"  比較ページ: {len(hk['pages'])}本")
     # 地域ページ
     if os.path.exists(IRYOHI):

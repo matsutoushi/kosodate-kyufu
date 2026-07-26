@@ -1,0 +1,287 @@
+"""
+Instagram カルーセル画像の自動生成。
+data/posts.json の投稿定義 → out/instagram/<post_id>/01.png ... を出力。
+
+サイズは 1080x1350(4:5)。Instagramのフィードで最も縦に大きく表示される比率。
+実行: python pipeline/carousel.py
+"""
+import json
+import os
+import textwrap
+
+from PIL import Image, ImageDraw, ImageFont
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+POSTS = os.path.join(ROOT, "data", "posts.json")
+OUT = os.path.join(ROOT, "out", "instagram")
+
+W, H = 1080, 1350
+MARGIN = 80
+
+# 配色(サイトと揃える)
+CREAM = "#FFFDF9"
+INK = "#2B2B33"
+SUB = "#6B6B76"
+BRAND = "#FF8A65"
+BRAND_D = "#F4643B"
+ACCENT = "#4DB6AC"
+PEACH = "#FFD9C9"
+
+FONT_DIR = "C:/Windows/Fonts"
+CANDIDATES = ["NotoSansJP-VF.ttf", "YuGothB.ttc", "meiryob.ttc", "YuGothR.ttc", "meiryo.ttc"]
+
+
+def font(size, bold=True):
+    """日本語フォントを返す。太字優先で探す。"""
+    order = CANDIDATES if bold else ["YuGothR.ttc", "meiryo.ttc", "NotoSansJP-VF.ttf"]
+    for name in order:
+        p = os.path.join(FONT_DIR, name)
+        if os.path.exists(p):
+            try:
+                f = ImageFont.truetype(p, size)
+                # 可変フォントは太さを指定
+                if name.endswith("-VF.ttf"):
+                    try:
+                        f.set_variation_by_name("Bold" if bold else "Regular")
+                    except Exception:
+                        pass
+                return f
+            except Exception:
+                continue
+    return ImageFont.load_default()
+
+
+def text_h(draw, s, f, width, spacing):
+    lines = wrap(draw, s, f, width)
+    return len(lines) * (line_h(f) + spacing)
+
+
+def line_h(f):
+    return f.size + int(f.size * 0.35)
+
+
+def wrap(draw, s, f, width):
+    """日本語は単語区切りがないので1文字ずつ測って折り返す。"""
+    lines, cur = [], ""
+    for ch in s:
+        if ch == "\n":
+            lines.append(cur)
+            cur = ""
+            continue
+        t = cur + ch
+        if draw.textlength(t, font=f) <= width:
+            cur = t
+        else:
+            lines.append(cur)
+            cur = ch
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def draw_wrapped(draw, xy, s, f, fill, width, spacing=8, center=False):
+    x, y = xy
+    for ln in wrap(draw, s, f, width):
+        if center:
+            w = draw.textlength(ln, font=f)
+            draw.text((x + (width - w) / 2, y), ln, font=f, fill=fill)
+        else:
+            draw.text((x, y), ln, font=f, fill=fill)
+        y += line_h(f) + spacing
+    return y
+
+
+def rounded(draw, box, r, fill, outline=None, w=0):
+    draw.rounded_rectangle(box, radius=r, fill=fill, outline=outline, width=w)
+
+
+def base(bg=CREAM):
+    img = Image.new("RGB", (W, H), bg)
+    return img, ImageDraw.Draw(img)
+
+
+def footer_brand(draw, dark=False):
+    f = font(30, bold=True)
+    c = "#FFFFFF" if dark else SUB
+    draw.text((MARGIN, H - 78), "@こそだて給付ナビ", font=f, fill=c)
+    draw.text((W - MARGIN - draw.textlength("kosodate-kyufu.com", font=f), H - 78),
+              "kosodate-kyufu.com", font=f, fill=c)
+
+
+# ---- スライド種別 -----------------------------------------------------------
+
+def slide_cover(s):
+    """表紙。ここで指を止めさせる。"""
+    img, d = base()
+    # 上部の帯
+    d.rectangle([0, 0, W, 300], fill=PEACH)
+    if s.get("eyebrow"):
+        f = font(38)
+        d.text((MARGIN, 90), s["eyebrow"], font=f, fill=BRAND_D)
+
+    y = 200
+    if s.get("kicker"):
+        f = font(44)
+        d.text((MARGIN, y), s["kicker"], font=f, fill="#8A5A44")
+        y += 80
+
+    y = max(y, 360)
+    f = font(int(s.get("size", 92)))
+    y = draw_wrapped(d, (MARGIN, y), s["title"], f, INK, W - MARGIN * 2, spacing=18)
+
+    if s.get("sub"):
+        y += 40
+        f2 = font(42, bold=False)
+        draw_wrapped(d, (MARGIN, y), s["sub"], f2, SUB, W - MARGIN * 2, spacing=12)
+
+    # 下部の誘導
+    rounded(d, [MARGIN, H - 250, W - MARGIN, H - 150], 50, BRAND)
+    f3 = font(44)
+    t = s.get("cta", "スワイプで見る →")
+    d.text(((W - d.textlength(t, font=f3)) / 2, H - 228), t, font=f3, fill="#FFFFFF")
+    footer_brand(d)
+    return img
+
+
+def slide_point(s, idx=None, total=None):
+    """本文スライド。1枚1メッセージ。"""
+    img, d = base()
+    y = 100
+    if idx:
+        # 番号バッジ
+        rounded(d, [MARGIN, y, MARGIN + 110, y + 66], 33, BRAND)
+        f = font(38)
+        t = f"{idx}"
+        d.text((MARGIN + (110 - d.textlength(t, font=f)) / 2, y + 10), t, font=f, fill="#FFFFFF")
+        y += 100
+
+    f = font(int(s.get("size", 66)))
+    y = draw_wrapped(d, (MARGIN, y), s["title"], f, INK, W - MARGIN * 2, spacing=16)
+
+    if s.get("amount"):
+        y += 30
+        aw = W - MARGIN * 2 - 80
+        # 1行に収まるよう文字を少しずつ小さくする(下限46)。それでも入らなければ折り返す
+        fa = font(64)
+        for size in range(64, 44, -4):
+            fa = font(size)
+            if d.textlength(s["amount"], font=fa) <= aw:
+                break
+        lines = wrap(d, s["amount"], fa, aw)
+        pad = 34
+        h = len(lines) * line_h(fa) + pad * 2 - int(fa.size * 0.35)
+        rounded(d, [MARGIN, y, W - MARGIN, y + h], 28, "#FFF5EF", outline=BRAND, w=3)
+        draw_wrapped(d, (MARGIN + 40, y + pad), s["amount"], fa, BRAND_D, aw, spacing=0, center=True)
+        y += h + 30
+
+    if s.get("body"):
+        y += 20
+        fb = font(42, bold=False)
+        y = draw_wrapped(d, (MARGIN, y), s["body"], fb, SUB, W - MARGIN * 2, spacing=14)
+
+    if s.get("note"):
+        fn = font(36, bold=False)
+        lines = wrap(d, s["note"], fn, W - MARGIN * 2 - 60)
+        h = len(lines) * (line_h(fn) + 10) + 40
+        yy = H - 190 - h
+        rounded(d, [MARGIN, yy, W - MARGIN, yy + h], 20, "#F2FAF8")
+        d.rectangle([MARGIN, yy, MARGIN + 8, yy + h], fill=ACCENT)
+        draw_wrapped(d, (MARGIN + 34, yy + 20), s["note"], fn, "#3F6F69", W - MARGIN * 2 - 60, spacing=10)
+
+    footer_brand(d)
+    return img
+
+
+def slide_list(s):
+    """リスト型(ランキングや一覧)。"""
+    img, d = base()
+    y = 100
+    f = font(60)
+    y = draw_wrapped(d, (MARGIN, y), s["title"], f, INK, W - MARGIN * 2, spacing=14)
+    y += 40
+
+    fi = font(44)
+    fs = font(30, bold=False)
+    fnum = font(32)
+    for i, item in enumerate(s["items"], 1):
+        rowh = 122
+        if y + rowh > H - 220:
+            break
+        bg = "#FFFFFF" if i % 2 else "#FFF8F4"
+        rounded(d, [MARGIN, y, W - MARGIN, y + rowh - 14], 18, bg)
+        # 番号
+        d.ellipse([MARGIN + 24, y + 30, MARGIN + 76, y + 82], fill=BRAND)
+        t = str(i)
+        d.text((MARGIN + 24 + (52 - d.textlength(t, font=fnum)) / 2, y + 42), t, font=fnum, fill="#FFFFFF")
+        # 本文(名前と補足が重ならないよう行間を確保)
+        d.text((MARGIN + 104, y + 22), item["name"], font=fi, fill=INK)
+        if item.get("meta"):
+            d.text((MARGIN + 104, y + 74), item["meta"], font=fs, fill=SUB)
+        y += rowh
+
+    if s.get("note"):
+        fn = font(36, bold=False)
+        draw_wrapped(d, (MARGIN, H - 250), s["note"], fn, SUB, W - MARGIN * 2, spacing=10)
+    footer_brand(d)
+    return img
+
+
+def slide_cta(s):
+    """最終スライド。保存とプロフィール誘導。"""
+    img, d = base(INK)
+    y = 180
+    f = font(76)
+    y = draw_wrapped(d, (MARGIN, y), s.get("title", "保存して、あとで確認を"), f,
+                     "#FFFFFF", W - MARGIN * 2, spacing=18, center=True)
+    y += 50
+    fb = font(42, bold=False)
+    body = s.get("body", "制度は申請しないともらえません。\n忘れないうちに保存しておいてください。")
+    y = draw_wrapped(d, (MARGIN, y), body, fb, "#C9C4CE", W - MARGIN * 2, spacing=14, center=True)
+
+    y += 70
+    rounded(d, [MARGIN, y, W - MARGIN, y + 200], 30, "#33313C")
+    f2 = font(40)
+    d.text((MARGIN + 50, y + 40), "🔍 あなたの街の助成額は?", font=f2, fill=BRAND)
+    f3 = font(36, bold=False)
+    draw_wrapped(d, (MARGIN + 50, y + 100), "プロフィールのリンクから、全国1,740市区町村を検索できます。",
+                 f3, "#C9C4CE", W - MARGIN * 2 - 100, spacing=8)
+
+    footer_brand(d, dark=True)
+    return img
+
+
+RENDER = {"cover": slide_cover, "point": slide_point, "list": slide_list, "cta": slide_cta}
+
+
+def build_post(post):
+    d = os.path.join(OUT, post["id"])
+    os.makedirs(d, exist_ok=True)
+    n = 0
+    pts = [s for s in post["slides"] if s["type"] == "point"]
+    pi = 0
+    for s in post["slides"]:
+        fn = RENDER[s["type"]]
+        if s["type"] == "point":
+            pi += 1
+            img = fn(s, idx=pi, total=len(pts))
+        else:
+            img = fn(s)
+        n += 1
+        img.save(os.path.join(d, f"{n:02d}.png"), quality=95)
+    # キャプションも書き出す
+    with open(os.path.join(d, "caption.txt"), "w", encoding="utf-8") as f:
+        f.write(post.get("caption", "").strip() + "\n")
+    return n, d
+
+
+def main():
+    posts = json.load(open(POSTS, encoding="utf-8"))["posts"]
+    os.makedirs(OUT, exist_ok=True)
+    for p in posts:
+        n, d = build_post(p)
+        print(f"  {p['id']}: {n}枚 → {d}")
+    print(f"\n完了: {len(posts)}投稿")
+
+
+if __name__ == "__main__":
+    main()
