@@ -22,41 +22,16 @@ GSC_TOKEN = "q0qAeAIxlo6jsG2oXXGQfxLfMg-FL-Gf--5B3YYFuDQ"  # Search Console 所�
 VC_LINKSWITCH_PID = "892667160"  # バリューコマース LinkSwitch(通常リンクを自動でアフィリエイト化)
 VC_SID = "3776805"
 
-# 制度ページから、文脈の合う「家計を軽くする」ページへの導線。
-# 押し売りにならないよう、各ページ1本だけ・関連の強いものに限る。
-RELATED = {
-    "jido-teate": ("hikaku-furusato", "児童手当が入る月に、ふるさと納税の準備を"),
-    "ninpu-shien-kyufu": ("hikaku-furusato", "おむつ・日用品はふるさと納税でも備えられます"),
-    "shussan-ichijikin": ("hikaku-card", "出産費用の支払いも、ポイントを取りこぼさずに"),
-    "shussan-teate": ("hikaku-sim", "収入が減る産休・育休こそ、固定費の見直しを"),
-    "ikuji-kyugyo-kyufu": ("hikaku-sim", "育休で収入が下がる時期の固定費対策"),
-    "hoiku-mushouka": ("hikaku-kyozai", "保育料が浮いた分を、学びに回すなら"),
-    "kodomo-iryohi": ("hikaku-denki", "医療費以外でも、毎月の固定費は下げられます"),
-    "ninpu-kenshin": ("hikaku-denki", "在宅時間が増える妊娠中は、光熱費の見直しも"),
-    "jido-fuyo-teate": ("hikaku-sim", "毎月の固定費を下げると、手当以上に効くことも"),
-    "hitorioya-iryohi": ("hikaku-denki", "電気・ガスの見直しで、毎月の負担を軽く"),
-    "koko-shushi-kin": ("hikaku-kyozai", "授業料以外にかかる学びの費用は"),
-    "koko-shogaku-kyufu": ("hikaku-kyozai", "教材費の負担を抑える選択肢"),
-    "shugaku-enjo": ("hikaku-kyozai", "家庭学習の費用を抑えるなら"),
-    "tokubetsu-jido-fuyo": ("hikaku-denki", "毎月の固定費を下げる方法も"),
-    "shogaiji-fukushi": ("hikaku-sim", "通信費の見直しで、毎月の負担を軽く"),
-}
-
-
-def related_card(prog_id, hikaku_pages):
-    """制度ページ下部の関連導線(1本だけ)。"""
-    rel = RELATED.get(prog_id)
-    if not rel:
+def related_card(prog_id=None, hikaku_pages=()):
+    """制度ページ下部の導線。制度ごとに広告を紐づけると不自然になるため、
+    「家計を軽くする」まとめページ1本に集約する。"""
+    if not hikaku_pages:
         return ""
-    hid, lead = rel
-    pg = next((p for p in hikaku_pages if p["id"] == hid), None)
-    if not pg:
-        return ""
-    return f"""<div class="sec-title">もらうだけでなく、減らす</div>
-<a class="card" href="./{hid}.html">
-  <div class="t">{pg.get('emoji','')} {html.escape(pg.get('nav_title', pg['title']))}</div>
-  <div class="s">{html.escape(lead)}</div>
-  <div class="d">家計を軽くする方法を整理しました →</div>
+    return """<div class="sec-title">もらうだけでなく、減らす</div>
+<a class="card" href="./kakei.html">
+  <div class="t">🏠 家計を軽くする、5つの見直し</div>
+  <div class="s">固定費は一度下げれば、効果がずっと続きます</div>
+  <div class="d">ふるさと納税・通信費・電気ガス・教育費などをまとめました →</div>
 </a>"""
 
 
@@ -423,6 +398,68 @@ q.addEventListener('input', draw);
     return "".join(parts)
 
 
+def build_kakei(hikaku_pages):
+    """「家計を軽くする」まとめページ。制度ページからの導線をここに集約する。"""
+    parts = [head(f"家計を軽くする、5つの見直し｜{SITE_NAME}",
+                  "子育て世帯が使える制度を確認したら、出ていくお金も見直してみませんか。ふるさと納税・通信費・電気ガス・教育費の考え方をまとめました。",
+                  "/kakei.html")]
+    parts.append(f"""
+<header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+<div class="wrap body">
+  <a class="back" href="./index.html">← ホーム</a>
+  <div class="pr">※本ページはプロモーションを含みます</div>
+  <h1 style="font-size:1.35rem;margin:.2em 0">家計を軽くする、5つの見直し</h1>
+
+  <p>このサイトでは「もらえるお金」を中心に紹介しています。ただ、家計を楽にする方法は
+  受け取ることだけではありません。<strong>出ていくお金を減らす</strong>という方向もあります。</p>
+
+  <p>しかも給付金の多くが一度きりなのに対して、<strong>固定費は一度下げれば効果がずっと続きます</strong>。
+  月3,000円下がれば、年間で36,000円。子どもが小学校を卒業するまで続ければ、それなりの金額になります。</p>
+
+  <div class="note">💡 全部をやる必要はありません。手をつけやすいものから1つずつで十分です。
+  それぞれのページに、選び方と注意点をまとめています。</div>
+
+  <div class="sec-title">見直しの候補</div>""")
+
+    order = ["hikaku-sim", "hikaku-denki", "hikaku-furusato", "hikaku-kyozai", "hikaku-card"]
+    why = {
+        "hikaku-sim": "効果が大きく、一度やれば戻らない。まず手をつけるならここ。",
+        "hikaku-denki": "生活を変えずに単価だけ下げられる。手続きもオンラインで完結。",
+        "hikaku-furusato": "実質2,000円の負担で、おむつや米など必ず使うものが届く。",
+        "hikaku-kyozai": "塾より費用を抑えたい家庭の選択肢。合うかどうかは試してから。",
+        "hikaku-card": "毎月必ず出ていく支出の支払い方を変えるだけ。",
+    }
+    pages = {p["id"]: p for p in hikaku_pages}
+    for i, pid in enumerate(order, 1):
+        p = pages.get(pid)
+        if not p:
+            continue
+        parts.append(f"""<a class="card" href="./{pid}.html">
+  <div class="t">{p.get('emoji','')} {html.escape(p.get('nav_title', p['title']))}</div>
+  <div class="s">{html.escape(why.get(pid,''))}</div>
+  <div class="d">{html.escape(p['lead'][:70])}… →</div>
+</a>""")
+
+    parts.append("""
+  <div class="sec-title">やる順番に迷ったら</div>
+  <ul class="tips">
+    <li>まず<strong>通信費</strong>。家族分をまとめて見直すと効果が一番大きく出ます</li>
+    <li>次に<strong>電気・ガス</strong>。使用量が多い家庭ほど差が出ます</li>
+    <li><strong>ふるさと納税</strong>は年末に向けて。上限額の確認から始めてください</li>
+    <li>教育費とカードは、生活が落ち着いてからで構いません</li>
+  </ul>
+
+  <div class="note">⚠️ 料金やキャンペーンの条件は頻繁に変わります。申し込み前に必ず各社の公式サイトで
+  最新の条件をご確認ください。当サイトは特定の事業者を推奨するものではありません。</div>
+
+  <a class="cta" href="./shindan.html" style="display:block;text-align:center">
+    ▶ 受け取れる制度も確認する
+  </a>
+</div>""")
+    parts.append(footer())
+    return "".join(parts)
+
+
 def build_policy():
     """プライバシーポリシー・免責事項。GA4のCookie利用とアフィリエイト表記のために必要。"""
     parts = [head(f"プライバシーポリシー・免責事項｜{SITE_NAME}",
@@ -582,13 +619,16 @@ def main():
         f.write(build_shindan(data))
     with open(os.path.join(SITE, "policy.html"), "w", encoding="utf-8") as f:
         f.write(build_policy())
+    if data.get("_hikaku"):
+        with open(os.path.join(SITE, "kakei.html"), "w", encoding="utf-8") as f:
+            f.write(build_kakei(data["_hikaku"]))
 
     # 独自ドメイン(GitHub Pages用)
     with open(os.path.join(SITE, "CNAME"), "w", encoding="utf-8") as f:
         f.write(DOMAIN + "\n")
 
     # sitemap.xml / robots.txt
-    pages = ["/", "/shindan.html", "/chiiki.html", "/policy.html"]
+    pages = ["/", "/shindan.html", "/chiiki.html", "/kakei.html", "/policy.html"]
     pages += [f"/{p['id']}.html" for p in data["programs"]]
     if os.path.exists(hikaku_path):
         pages += [f"/{pg['id']}.html" for pg in json.load(open(hikaku_path, encoding="utf-8"))["pages"]]
