@@ -19,6 +19,8 @@ DOMAIN = "kosodate-kyufu.com"
 BASE_URL = f"https://{DOMAIN}"
 GA4_ID = "G-ZW9ZH2FCPS"  # GA4測定ID。ここ1箇所で全ページに反映される
 GSC_TOKEN = "q0qAeAIxlo6jsG2oXXGQfxLfMg-FL-Gf--5B3YYFuDQ"  # Search Console 所有権確認
+VC_LINKSWITCH_PID = "892667160"  # バリューコマース LinkSwitch(通常リンクを自動でアフィリエイト化)
+VC_SID = "3776805"
 
 # ---- 共通パーツ -------------------------------------------------------------
 
@@ -467,8 +469,12 @@ def build_hikaku(pg, all_pages=()):
         parts.append("</ul>")
         url = it.get("aff_url") or it.get("official")
         if url:
-            label = f"{it['name']}を見る" if it.get("aff_url") else "公式サイトを見る"
-            parts.append(f'<a class="offbtn" href="{html.escape(url)}" target="_blank" rel="noopener sponsored">{html.escape(label)}</a>')
+            label = it.get("cta") or (f"{it['name']}を見る" if it.get("aff_url") else "公式サイトを見る")
+            # ASPの計測用1x1ピクセルはアンカー内に置く必要がある
+            pixel = (f'<img src="{html.escape(it["aff_pixel"])}" height="1" width="1" border="0" alt="">'
+                     if it.get("aff_pixel") else "")
+            parts.append(f'<a class="offbtn" href="{html.escape(url)}" target="_blank" '
+                         f'rel="noopener sponsored nofollow">{pixel}{html.escape(label)}</a>')
         if not it.get("aff_url"):
             parts.append('<div style="font-size:.7rem;color:#c9b8a8;margin-top:8px">※提携後にリンクを掲載します</div>')
         parts.append("</div>")
@@ -485,6 +491,10 @@ def build_hikaku(pg, all_pages=()):
         parts.append('<div class="sec-title">ほかの見直しも</div>')
         parts.append(others)
     parts.append("</div>")
+    # LinkSwitch は比較ページのみ(制度ページは広告を置かない方針)
+    if VC_LINKSWITCH_PID:
+        parts.append(f'<script>var vc_pid="{VC_LINKSWITCH_PID}";</script>'
+                     '<script src="//aml.valuecommerce.com/vcdal.js" async></script>')
     parts.append(footer())
     return "".join(parts)
 
