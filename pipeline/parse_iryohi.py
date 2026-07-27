@@ -63,6 +63,8 @@ def main():
     rows, seen = [], set()
     for m in ROW.finditer(text):
         pref, no, city, age_out, age_in, lim_out, lim_in, pay_out, pay_in = m.groups()
+        # 注記記号(※)が名前に混ざる自治体があるので落とす(他データと突合するため)
+        city = city.replace("※", "").strip()
         key = (pref, city)
         if key in seen:
             continue

@@ -11,6 +11,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data", "programs.json")
 ENRICH = os.path.join(ROOT, "data", "enrich.json")
 IRYOHI = os.path.join(ROOT, "data", "iryohi_municipalities.json")
+TAIKI = os.path.join(ROOT, "data", "taiki_municipalities.json")
 SITE = os.path.join(ROOT, "site")
 
 SITE_NAME = "こそだて給付ナビ"
@@ -274,10 +275,14 @@ def build_shindan(data):
     # 簡易チェック: 状況にチェック → 該当しうる制度を表示(クライアントサイド)
     checks = [
         ("pregnant", "いま妊娠中／妊娠を予定している", ["ninpu-shien-kyufu", "ninpu-kenshin", "shussan-ichijikin", "shussan-teate"]),
+        ("funin", "不妊治療を受けている／検討している", ["funin-chiryo"]),
+        ("postnatal", "出産して1年以内(産後の体調や育児が不安)", ["sango-care"]),
         ("company", "会社員・公務員で産休・育休を取る(取った)", ["shussan-teate", "ikuji-kyugyo-kyufu"]),
         ("baby", "0〜2歳／未就学の子どもがいる", ["jido-teate", "kodomo-iryohi", "hoiku-mushouka"]),
         ("shougaku", "小・中学生の子どもがいる", ["jido-teate", "shugaku-enjo", "kodomo-iryohi"]),
         ("koukou", "高校生年代の子どもがいる", ["jido-teate", "koko-shushi-kin", "koko-shogaku-kyufu"]),
+        ("daigaku", "大学・専門学校への進学を控えている(在学中)", ["kyufu-shogakukin"]),
+        ("tashi", "扶養している子どもが3人以上いる", ["jido-teate", "tashi-mushouka"]),
         ("single", "ひとり親家庭である", ["jido-fuyo-teate", "hitorioya-iryohi", "kodomo-iryohi"]),
         ("shogai", "障害のある子どもを育てている", ["tokubetsu-jido-fuyo", "shogaiji-fukushi"]),
     ]
@@ -321,10 +326,53 @@ boxes.forEach(b=>b.addEventListener('change',render));
     return "".join(parts)
 
 
-def build_chiiki(iry, hikaku_pages=()):
-    """全市区町村の子ども医療費助成を検索できるページ。地域差を可視化する目玉。"""
+def taiki_section(taiki):
+    """待機児童の全国像。「ゼロが9割」なのに1歳児だけ突出している点を伝える。"""
+    ms = taiki["municipalities"]
+    total = sum(m["wait"] for m in ms)
+    zero = sum(1 for m in ms if m["wait"] == 0)
+    by_age = {k: sum(m["wait_age"].get(k, 0) for m in ms) for k in ("0", "1", "2", "3+")}
+    top = sorted([m for m in ms if m["wait"] > 0], key=lambda m: -m["wait"])[:10]
+
+    rows = "".join(
+        f'<tr><td>{html.escape(m["pref"])} {html.escape(m["city"])}</td>'
+        f'<td style="text-align:right">{m["wait"]}人</td>'
+        f'<td style="text-align:right">{m["wait_age"].get("1", 0)}人</td></tr>'
+        for m in top)
+
+    return f"""
+  <div class="sec-title">保育園には入れる? 待機児童のいま</div>
+  <div class="stat">
+    <div><div class="v">{total:,}</div><div class="l">全国の待機児童</div></div>
+    <div><div class="v">{zero:,}</div><div class="l">待機児童ゼロの<br>自治体</div></div>
+    <div><div class="v">{by_age['1']:,}</div><div class="l">うち1歳児</div></div>
+  </div>
+  <p style="font-size:.92rem">全国{len(ms):,}市区町村のうち<strong>{zero:,}({zero/len(ms)*100:.0f}%)は待機児童ゼロ</strong>です。
+  「保活は大変」というイメージほど、いまは全国的に厳しくはありません。</p>
+  <p style="font-size:.92rem">ただし中身を見ると話が変わります。待機児童{total:,}人のうち
+  <strong>{by_age['1']:,}人({by_age['1']/total*100:.0f}%)が1歳児</strong>。0歳児は{by_age['0']}人、2歳児は{by_age['2']}人、3歳以上は{by_age['3+']}人です。</p>
+  <div class="note">📌 <strong>これは「育休明けの壁」です。</strong>0歳の4月に入園させれば入りやすく、
+  1年間の育休を取って1歳の4月に申し込むと急に入りにくくなる。
+  育休をいつまで取るかを決めるときは、お住まいの自治体の1歳児の状況を確認しておくと安心です。</div>
+
+  <div class="sec-title">待機児童が多い自治体</div>
+  <table class="rank"><tr><th>自治体</th><th style="text-align:right">待機児童</th><th style="text-align:right">うち1歳児</th></tr>
+  {rows}
+  </table>
+  <p style="font-size:.78rem;color:#a99">
+    出典: {html.escape(taiki["source"])}({html.escape(taiki["as_of"])})<br>
+    <a href="{html.escape(taiki["source_url"])}" target="_blank" rel="noopener">こども家庭庁の公表資料はこちら</a><br>
+    ※待機児童の定義は国が定めていますが、認可外を利用しているなど数に含まれない「隠れ待機児童」もいます。
+  </p>
+"""
+
+
+def build_chiiki(iry, hikaku_pages=(), taiki=None):
+    """全市区町村の「子育てのしやすさ」を検索できるページ。地域差の可視化がこのサイトの核。
+    子ども医療費助成 + 保育園の待機児童数を1つの検索にまとめる。"""
     import json as _j
     ms = iry["municipalities"]
+    tk = {(t["pref"], t["city"]): t for t in (taiki or {}).get("municipalities", [])}
     total = len(ms)
     n18 = sum(1 for m in ms if m["rank_out"] >= 18)
     nolimit = sum(1 for m in ms if not m["limit_out"])
@@ -333,13 +381,13 @@ def build_chiiki(iry, hikaku_pages=()):
     top.sort(key=lambda m: -m["rank_out"])
     low = [m for m in ms if m["rank_out"] <= 12]
 
-    parts = [head(f"あなたの市区町村の子ども医療費助成｜{SITE_NAME}",
+    parts = [head(f"あなたの街の子育て環境を調べる｜{SITE_NAME}",
                   f"全国{total}市区町村の子ども医療費助成(対象年齢・所得制限・自己負担)を検索できます。住む場所で驚くほど違います。", "/chiiki.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
 <div class="wrap">
   <a class="back" href="./index.html">← ホーム</a>
-  <h1 style="font-size:1.35rem;margin:.2em 0">子どもの医療費、あなたの街は何歳まで?</h1>
+  <h1 style="font-size:1.35rem;margin:.2em 0">あなたの街の子育て環境を調べる</h1>
   <p style="color:var(--sub);font-size:.92rem">子ども医療費助成は<strong>国ではなく自治体の制度</strong>。だから住む場所で大きく違います。
   全国{total:,}市区町村を検索できます。</p>
 
@@ -350,6 +398,8 @@ def build_chiiki(iry, hikaku_pages=()):
   </div>
 
   <div class="sec-title">市区町村を検索</div>
+  <p style="color:var(--sub);font-size:.88rem;margin:0 0 6px">
+  医療費助成に加えて、<strong>保育園の待機児童数</strong>もあわせて表示します。</p>
   <input class="search" id="q" type="search" placeholder="例: 世田谷区／札幌市／京丹後市" autocomplete="off">
   <div id="mres"></div>
 
@@ -371,26 +421,38 @@ def build_chiiki(iry, hikaku_pages=()):
     ※本表は公表資料をもとに整理したものです。実際の助成内容(対象範囲・手続き)は各市区町村の最新情報をご確認ください。
   </p>
 
+  {taiki_section(taiki) if taiki else ""}
+
   <div class="sec-title">住む場所は変えられなくても</div>
   <p style="color:var(--sub);font-size:.92rem">医療費の助成額は自治体が決めることなので、自分では変えられません。
   でも、毎月の固定費は自分で下げられます。浮いたお金は、助成の差を埋めるくらいの効果になることもあります。</p>
   {hikaku_cards([p for p in hikaku_pages if p["id"] in ("hikaku-denki", "hikaku-sim", "hikaku-furusato")])}
 </div>
 <script>
-const M = {_j.dumps([[m["pref"], m["city"], m["age_out"], m["age_in"], m["limit_out"], m["copay_out"]] for m in ms], ensure_ascii=False)};
+const M = {_j.dumps([[m["pref"], m["city"], m["age_out"], m["age_in"], m["limit_out"], m["copay_out"],
+   (tk.get((m["pref"], m["city"])) or {}).get("wait", -1),
+   (tk.get((m["pref"], m["city"])) or {}).get("wait_age", {}).get("1", 0)] for m in ms], ensure_ascii=False)};
 const q = document.getElementById('q'), out = document.getElementById('mres');
 function draw(){{
   const v = q.value.trim();
   if(!v){{ out.innerHTML=''; return; }}
   const hits = M.filter(r => (r[0]+r[1]).includes(v)).slice(0,40);
   if(!hits.length){{ out.innerHTML='<div class="note">見つかりませんでした。市区町村名の一部で試してください(例:世田谷)。</div>'; return; }}
-  out.innerHTML = hits.map(r =>
-    '<div class="mrow"><div class="n">'+r[0]+' '+r[1]+'</div>'+
+  out.innerHTML = hits.map(r => {{
+    let taiki = '';
+    if (r[6] >= 0) {{
+      taiki = '<div class="meta" style="margin-top:8px">保育園の待機児童 <strong>'
+        + (r[6] === 0 ? '0人' : r[6] + '人')
+        + '</strong>' + (r[7] > 0 ? '（うち1歳児 ' + r[7] + '人）' : '') + '</div>';
+    }}
+    return '<div class="mrow"><div class="n">'+r[0]+' '+r[1]+'</div>'+
     '<div class="meta">通院 <strong>'+r[2]+'</strong>まで ／ 入院 <strong>'+r[3]+'</strong>まで</div>'+
     '<div style="margin-top:6px">'+
       (r[4]?'<span class="pill p-warn">所得制限あり</span>':'<span class="pill p-good">所得制限なし</span>')+
       (r[5]?'<span class="pill p-warn">自己負担あり</span>':'<span class="pill p-good">自己負担なし</span>')+
-    '</div></div>').join('');
+      (r[6] === 0 ? '<span class="pill p-good">待機児童ゼロ</span>' : '')+
+    '</div>' + taiki + '</div>';
+  }}).join('');
 }}
 q.addEventListener('input', draw);
 </script>""")
@@ -606,8 +668,11 @@ def main():
     # 地域ページ
     if os.path.exists(IRYOHI):
         iry = json.load(open(IRYOHI, encoding="utf-8"))
+        tk = json.load(open(TAIKI, encoding="utf-8")) if os.path.exists(TAIKI) else None
         with open(os.path.join(SITE, "chiiki.html"), "w", encoding="utf-8") as f:
-            f.write(build_chiiki(iry, data.get("_hikaku") or []))
+            f.write(build_chiiki(iry, data.get("_hikaku") or [], tk))
+        if tk:
+            print(f"  待機児童データ: {tk['count']}市区町村")
         print(f"  地域ページ: {iry['count']}市区町村")
 
     with open(os.path.join(SITE, "index.html"), "w", encoding="utf-8") as f:
