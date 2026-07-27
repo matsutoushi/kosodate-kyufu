@@ -22,6 +22,44 @@ GSC_TOKEN = "q0qAeAIxlo6jsG2oXXGQfxLfMg-FL-Gf--5B3YYFuDQ"  # Search Console 所�
 VC_LINKSWITCH_PID = "892667160"  # バリューコマース LinkSwitch(通常リンクを自動でアフィリエイト化)
 VC_SID = "3776805"
 
+# 制度ページから、文脈の合う「家計を軽くする」ページへの導線。
+# 押し売りにならないよう、各ページ1本だけ・関連の強いものに限る。
+RELATED = {
+    "jido-teate": ("hikaku-furusato", "児童手当が入る月に、ふるさと納税の準備を"),
+    "ninpu-shien-kyufu": ("hikaku-furusato", "おむつ・日用品はふるさと納税でも備えられます"),
+    "shussan-ichijikin": ("hikaku-card", "出産費用の支払いも、ポイントを取りこぼさずに"),
+    "shussan-teate": ("hikaku-sim", "収入が減る産休・育休こそ、固定費の見直しを"),
+    "ikuji-kyugyo-kyufu": ("hikaku-sim", "育休で収入が下がる時期の固定費対策"),
+    "hoiku-mushouka": ("hikaku-kyozai", "保育料が浮いた分を、学びに回すなら"),
+    "kodomo-iryohi": ("hikaku-denki", "医療費以外でも、毎月の固定費は下げられます"),
+    "ninpu-kenshin": ("hikaku-denki", "在宅時間が増える妊娠中は、光熱費の見直しも"),
+    "jido-fuyo-teate": ("hikaku-sim", "毎月の固定費を下げると、手当以上に効くことも"),
+    "hitorioya-iryohi": ("hikaku-denki", "電気・ガスの見直しで、毎月の負担を軽く"),
+    "koko-shushi-kin": ("hikaku-kyozai", "授業料以外にかかる学びの費用は"),
+    "koko-shogaku-kyufu": ("hikaku-kyozai", "教材費の負担を抑える選択肢"),
+    "shugaku-enjo": ("hikaku-kyozai", "家庭学習の費用を抑えるなら"),
+    "tokubetsu-jido-fuyo": ("hikaku-denki", "毎月の固定費を下げる方法も"),
+    "shogaiji-fukushi": ("hikaku-sim", "通信費の見直しで、毎月の負担を軽く"),
+}
+
+
+def related_card(prog_id, hikaku_pages):
+    """制度ページ下部の関連導線(1本だけ)。"""
+    rel = RELATED.get(prog_id)
+    if not rel:
+        return ""
+    hid, lead = rel
+    pg = next((p for p in hikaku_pages if p["id"] == hid), None)
+    if not pg:
+        return ""
+    return f"""<div class="sec-title">もらうだけでなく、減らす</div>
+<a class="card" href="./{hid}.html">
+  <div class="t">{pg.get('emoji','')} {html.escape(pg.get('nav_title', pg['title']))}</div>
+  <div class="s">{html.escape(lead)}</div>
+  <div class="d">家計を軽くする方法を整理しました →</div>
+</a>"""
+
+
 # ---- 共通パーツ -------------------------------------------------------------
 
 def head(title, desc, path="/"):
@@ -249,6 +287,7 @@ def build_program(p, data):
     else:
         parts.append(f'<div class="note">🔗 {html.escape(p["official_name"])}</div>')
     parts.append(f'<p style="font-size:.74rem;color:#a99;margin-top:16px">最終更新: {html.escape(p.get("updated",""))}／出典: {html.escape(p["official_name"])}</p>')
+    parts.append(related_card(p["id"], data.get("_hikaku") or []))
     parts.append("</div>")
     parts.append(footer())
     return "".join(parts)
@@ -256,6 +295,7 @@ def build_program(p, data):
 
 def build_shindan(data):
     progs = data["programs"]
+    hikaku_pages = data.get("_hikaku") or []
     # 簡易チェック: 状況にチェック → 該当しうる制度を表示(クライアントサイド)
     checks = [
         ("pregnant", "いま妊娠中／妊娠を予定している", ["ninpu-shien-kyufu", "ninpu-kenshin", "shussan-ichijikin", "shussan-teate"]),
@@ -280,6 +320,11 @@ def build_shindan(data):
         parts.append(f'<div class="q"><label><input type="checkbox" data-k="{cid}"> {html.escape(label)}</label></div>')
     parts.append("""</div>
   <div id="result"></div>
+
+  <div class="sec-title">もらうだけでなく、減らす</div>
+  <p style="color:var(--sub);font-size:.92rem">受け取れる制度を確認したら、出ていくお金も見直してみてください。
+  固定費は一度下げれば、その効果がずっと続きます。</p>
+  """ + hikaku_cards(hikaku_pages) + """
 </div>""")
     parts.append(f"""<script>
 const MAP = {_j.dumps({c[0]: c[2] for c in checks}, ensure_ascii=False)};
@@ -301,7 +346,7 @@ boxes.forEach(b=>b.addEventListener('change',render));
     return "".join(parts)
 
 
-def build_chiiki(iry):
+def build_chiiki(iry, hikaku_pages=()):
     """全市区町村の子ども医療費助成を検索できるページ。地域差を可視化する目玉。"""
     import json as _j
     ms = iry["municipalities"]
@@ -350,6 +395,11 @@ def build_chiiki(iry):
     <a href="{html.escape(iry["source_url"])}" target="_blank" rel="noopener">こども家庭庁の公表資料はこちら</a><br>
     ※本表は公表資料をもとに整理したものです。実際の助成内容(対象範囲・手続き)は各市区町村の最新情報をご確認ください。
   </p>
+
+  <div class="sec-title">住む場所は変えられなくても</div>
+  <p style="color:var(--sub);font-size:.92rem">医療費の助成額は自治体が決めることなので、自分では変えられません。
+  でも、毎月の固定費は自分で下げられます。浮いたお金は、助成の差を埋めるくらいの効果になることもあります。</p>
+  {hikaku_cards([p for p in hikaku_pages if p["id"] in ("hikaku-denki", "hikaku-sim", "hikaku-furusato")])}
 </div>
 <script>
 const M = {_j.dumps([[m["pref"], m["city"], m["age_out"], m["age_in"], m["limit_out"], m["copay_out"]] for m in ms], ensure_ascii=False)};
@@ -475,8 +525,6 @@ def build_hikaku(pg, all_pages=()):
                      if it.get("aff_pixel") else "")
             parts.append(f'<a class="offbtn" href="{html.escape(url)}" target="_blank" '
                          f'rel="noopener sponsored nofollow">{pixel}{html.escape(label)}</a>')
-        if not it.get("aff_url"):
-            parts.append('<div style="font-size:.7rem;color:#c9b8a8;margin-top:8px">※提携後にリンクを掲載します</div>')
         parts.append("</div>")
 
     parts.append('<div class="sec-title">子育て世帯の選び方のコツ</div><ul class="tips">')
@@ -522,7 +570,7 @@ def main():
     if os.path.exists(IRYOHI):
         iry = json.load(open(IRYOHI, encoding="utf-8"))
         with open(os.path.join(SITE, "chiiki.html"), "w", encoding="utf-8") as f:
-            f.write(build_chiiki(iry))
+            f.write(build_chiiki(iry, data.get("_hikaku") or []))
         print(f"  地域ページ: {iry['count']}市区町村")
 
     with open(os.path.join(SITE, "index.html"), "w", encoding="utf-8") as f:
