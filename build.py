@@ -267,6 +267,19 @@ def build_program(p, data):
         parts.append("</div>")
     if e.get("case"):
         parts.append(f'<div class="case"><div class="h">💡 モデルケース</div>{html.escape(e["case"])}</div>')
+    if e.get("prefectures"):
+        pf = e["prefectures"]
+        parts.append(f'<div class="sec-title">{html.escape(pf["title"])}</div>')
+        parts.append(f'<p>{html.escape(pf["lead"])}</p>')
+        for r in pf["rows"]:
+            parts.append(f"""<div class="card" style="cursor:default">
+  <div class="t">{html.escape(r['name'])}</div>
+  <div class="s">{html.escape(r['headline'])}</div>
+  <div class="d">{html.escape(r['detail'])}</div>
+  <a class="offbtn" href="{html.escape(r['url'])}" target="_blank" rel="noopener">公式ページで確認する</a>
+</div>""")
+        if pf.get("note"):
+            parts.append(f'<div class="note">📌 {html.escape(pf["note"])}</div>')
     if p.get("id") == "kodomo-iryohi":
         parts.append('<a class="cta" href="./chiiki.html" style="display:block;text-align:center">📍 お住まいの市区町村の助成を調べる</a>')
     if e.get("tips"):
