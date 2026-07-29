@@ -12,6 +12,7 @@ DATA = os.path.join(ROOT, "data", "programs.json")
 ENRICH = os.path.join(ROOT, "data", "enrich.json")
 IRYOHI = os.path.join(ROOT, "data", "iryohi_municipalities.json")
 TAIKI = os.path.join(ROOT, "data", "taiki_municipalities.json")
+IRYOHI_PREF = os.path.join(ROOT, "data", "iryohi_prefectures.json")
 SITE = os.path.join(ROOT, "site")
 
 SITE_NAME = "こそだて給付ナビ"
@@ -167,6 +168,10 @@ table.rank th{color:var(--sub);font-size:.8rem}
 .gnav::-webkit-scrollbar{display:none}
 /* 地域の検索結果の補足 */
 .localnote{background:#fff8f4;border-radius:12px;padding:14px 16px;margin:14px 0;font-size:.9rem}
+.dsec{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+.dsec:first-of-type{border-top:0;margin-top:6px;padding-top:0}
+.dh{font-weight:800;font-size:.86rem;color:var(--accent);margin-bottom:2px}
+.mrow{padding:14px 16px}
 .localnote a{font-weight:700}
 """
 
@@ -409,12 +414,40 @@ def taiki_section(taiki):
 """
 
 
-def build_chiiki(iry, hikaku_pages=(), taiki=None):
+def build_chiiki(iry, hikaku_pages=(), taiki=None, iry_pref=None):
     """全市区町村の「子育てのしやすさ」を検索できるページ。地域差の可視化がこのサイトの核。
     子ども医療費助成 + 保育園の待機児童数を1つの検索にまとめる。"""
     import json as _j
     ms = iry["municipalities"]
     tk = {(t["pref"], t["city"]): t for t in (taiki or {}).get("municipalities", [])}
+    pf = {p["pref"]: p for p in (iry_pref or {}).get("prefectures", [])}
+
+    # 県内での位置づけ(医療費の手厚さ順位)を先に算出しておく
+    by_pref = {}
+    for m in ms:
+        by_pref.setdefault(m["pref"], []).append(m)
+    rank_of = {}
+    for pref, lst in by_pref.items():
+        # 対象年齢が高い→所得制限なし→自己負担なし の順で手厚いとみなす
+        ordered = sorted(lst, key=lambda x: (-x["rank_out"], x["limit_out"], x["copay_out"]))
+        for i, x in enumerate(ordered, 1):
+            rank_of[(x["pref"], x["city"])] = i
+
+    rows_js = []
+    for m in ms:
+        t = tk.get((m["pref"], m["city"])) or {}
+        wa = t.get("wait_age", {})
+        rows_js.append([
+            m["pref"], m["city"], m["age_out"], m["age_in"],
+            m["limit_out"], m["copay_out"],
+            t.get("wait", -1),
+            [wa.get("0", 0), wa.get("1", 0), wa.get("2", 0), wa.get("3+", 0)],
+            t.get("apply", 0),
+            rank_of.get((m["pref"], m["city"]), 0),
+            len(by_pref.get(m["pref"], [])),
+        ])
+    pref_js = {k: [v.get("age_out"), v.get("limit_out"), v.get("copay_out"), v.get("has_program")]
+               for k, v in pf.items()}
     total = len(ms)
     n18 = sum(1 for m in ms if m["rank_out"] >= 18)
     nolimit = sum(1 for m in ms if not m["limit_out"])
@@ -493,35 +526,69 @@ def build_chiiki(iry, hikaku_pages=(), taiki=None):
   {hikaku_cards([p for p in hikaku_pages if p["id"] in ("hikaku-denki", "hikaku-sim", "hikaku-furusato")])}
 </div>
 <script>
-const M = {_j.dumps([[m["pref"], m["city"], m["age_out"], m["age_in"], m["limit_out"], m["copay_out"],
-   (tk.get((m["pref"], m["city"])) or {}).get("wait", -1),
-   (tk.get((m["pref"], m["city"])) or {}).get("wait_age", {}).get("1", 0)] for m in ms], ensure_ascii=False)};
+const M = {_j.dumps(rows_js, ensure_ascii=False)};
+const PREF = {_j.dumps(pref_js, ensure_ascii=False)};
 const q = document.getElementById('q'), out = document.getElementById('mres');
 function draw(){{
   const v = q.value.trim();
   if(!v){{ out.innerHTML=''; return; }}
-  const hits = M.filter(r => (r[0]+r[1]).includes(v)).slice(0,40);
+  const hits = M.filter(r => (r[0]+r[1]).includes(v)).slice(0,12);
   if(!hits.length){{ out.innerHTML='<div class="note">見つかりませんでした。市区町村名の一部で試してください(例:世田谷)。</div>'; return; }}
   out.innerHTML = hits.map(r => {{
-    let taiki = '';
-    if (r[6] >= 0) {{
-      taiki = '<div class="meta" style="margin-top:8px">保育園の待機児童 <strong>'
-        + (r[6] === 0 ? '0人' : r[6] + '人')
-        + '</strong>' + (r[7] > 0 ? '（うち1歳児 ' + r[7] + '人）' : '') + '</div>';
+    const [pref, city, ageOut, ageIn, limitOut, copayOut, wait, waitAge, apply, rank, total] = r;
+    let h = '<div class="mrow"><div class="n">'+pref+' '+city+'</div>';
+
+    // 医療費助成
+    h += '<div class="dsec"><div class="dh">🏥 子ども医療費助成</div>'+
+      '<div class="meta">通院 <strong>'+ageOut+'</strong>まで ／ 入院 <strong>'+ageIn+'</strong>まで</div>'+
+      '<div style="margin-top:6px">'+
+      (limitOut?'<span class="pill p-warn">所得制限あり</span>':'<span class="pill p-good">所得制限なし</span>')+
+      (copayOut?'<span class="pill p-warn">自己負担あり</span>':'<span class="pill p-good">自己負担なし</span>')+
+      '</div>';
+    if (rank && total > 1) {{
+      h += '<div class="meta">県内の手厚さ <strong>'+pref+'内 '+total+'市区町村中 '+rank+'位</strong></div>';
     }}
-    const q2 = encodeURIComponent(r[0] + r[1] + ' 子育て 給付金 助成');
-    return '<div class="mrow"><div class="n">'+r[0]+' '+r[1]+'</div>'+
-    '<div class="meta">通院 <strong>'+r[2]+'</strong>まで ／ 入院 <strong>'+r[3]+'</strong>まで</div>'+
-    '<div style="margin-top:6px">'+
-      (r[4]?'<span class="pill p-warn">所得制限あり</span>':'<span class="pill p-good">所得制限なし</span>')+
-      (r[5]?'<span class="pill p-warn">自己負担あり</span>':'<span class="pill p-good">自己負担なし</span>')+
-      (r[6] === 0 ? '<span class="pill p-good">待機児童ゼロ</span>' : '')+
-    '</div>' + taiki +
-    '<div style="margin-top:10px;font-size:.84rem">'+
-      '<a href="https://www.google.com/search?q='+q2+'" target="_blank" rel="noopener">'+
-      '🔎 '+r[1]+'の独自支援を公式サイトで探す</a></div>' +
-    '</div>';
+    const p = PREF[pref];
+    if (p) {{
+      h += '<div class="meta">※'+pref+'の制度: ' +
+        (p[3] === false ? '県独自の助成なし(市区町村が実施)' :
+          ('通院 '+(p[0]||'—')+'まで' + (p[1]===true?' / 所得制限あり':p[1]===false?' / 所得制限なし':''))) +
+        '</div>';
+    }}
+    h += '</div>';
+
+    // 保育園
+    if (wait >= 0) {{
+      h += '<div class="dsec"><div class="dh">🍼 保育園</div>'+
+        '<div class="meta">待機児童 <strong>'+(wait===0?'0人':wait+'人')+'</strong>'+
+        (apply?'（申込 '+apply.toLocaleString()+'人）':'')+'</div>';
+      if (wait > 0) {{
+        const labels = ['0歳','1歳','2歳','3歳〜'];
+        const parts = waitAge.map((v,i)=> v>0 ? labels[i]+' '+v+'人' : null).filter(Boolean);
+        if (parts.length) h += '<div class="meta">内訳: '+parts.join(' / ')+'</div>';
+        if (waitAge[1] > 0 && waitAge[1] >= Math.max(...waitAge)) {{
+          h += '<div class="meta" style="color:var(--brand-d)">⚠️ 1歳児がいちばん入りにくい地域です（育休明けは要注意）</div>';
+        }}
+      }} else {{
+        h += '<div style="margin-top:4px"><span class="pill p-good">待機児童ゼロ</span></div>';
+      }}
+      h += '</div>';
+    }}
+
+    // 次の行動
+    const q2 = encodeURIComponent(pref + city + ' 子育て 給付金 助成');
+    h += '<div class="dsec"><div class="dh">📋 この街で確認すること</div>'+
+      '<div class="meta">出産祝い金・入学祝い金・中学校の給食費など、自治体独自の支援は公式サイトで確認できます。</div>'+
+      '<div style="margin-top:8px;font-size:.86rem">'+
+      '<a href="https://www.google.com/search?q='+q2+'" target="_blank" rel="noopener">🔎 '+city+'の独自支援を探す</a>'+
+      '　<a href="#" data-pref="'+pref+'" class="samepref">📍 '+pref+'内で比べる</a>'+
+      '</div></div>';
+
+    return h + '</div>';
   }}).join('');
+  document.querySelectorAll('.samepref').forEach(a=>a.addEventListener('click',e=>{{
+    e.preventDefault(); q.value = e.target.dataset.pref; draw();
+  }}));
 }}
 q.addEventListener('input', draw);
 </script>""")
@@ -744,7 +811,8 @@ def main():
         iry = json.load(open(IRYOHI, encoding="utf-8"))
         tk = json.load(open(TAIKI, encoding="utf-8")) if os.path.exists(TAIKI) else None
         with open(os.path.join(SITE, "chiiki.html"), "w", encoding="utf-8") as f:
-            f.write(build_chiiki(iry, data.get("_hikaku") or [], tk))
+            ip = json.load(open(IRYOHI_PREF, encoding="utf-8")) if os.path.exists(IRYOHI_PREF) else None
+            f.write(build_chiiki(iry, data.get("_hikaku") or [], tk, ip))
         if tk:
             print(f"  待機児童データ: {tk['count']}市区町村")
         print(f"  地域ページ: {iry['count']}市区町村")

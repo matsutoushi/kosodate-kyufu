@@ -1,0 +1,384 @@
+{
+ "source": "こども家庭庁「こどもに係る医療費の助成についての調査」別紙2(都道府県用)",
+ "source_url": "https://www.cfa.go.jp/policies/boshihoken/kodomoiryouhityousa-r7",
+ "as_of": "令和7年4月1日時点",
+ "count": 47,
+ "prefectures": [
+  {
+   "pref": "北海道",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "12歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "青森県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "岩手県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "12歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "宮城県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": true,
+   "copay_out": false
+  },
+  {
+   "pref": "秋田県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "山形県",
+   "has_program": true,
+   "age_out": "9歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "福島県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": false,
+   "copay_out": false
+  },
+  {
+   "pref": "茨城県",
+   "has_program": true,
+   "age_out": "12歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "栃木県",
+   "has_program": true,
+   "age_out": "15歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "群馬県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": false,
+   "copay_out": false
+  },
+  {
+   "pref": "埼玉県",
+   "has_program": true,
+   "age_out": "9歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "千葉県",
+   "has_program": true,
+   "age_out": "9歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "東京都",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "神奈川県",
+   "has_program": true,
+   "age_out": "12歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "新潟県",
+   "has_program": false,
+   "age_out": null,
+   "age_in": null,
+   "limit_out": null,
+   "copay_out": null
+  },
+  {
+   "pref": "富山県",
+   "has_program": true,
+   "age_out": "12歳年度末",
+   "age_in": "12歳年度末",
+   "limit_out": false,
+   "copay_out": false
+  },
+  {
+   "pref": "石川県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "福井県",
+   "has_program": true,
+   "age_out": "15歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "山梨県",
+   "has_program": true,
+   "age_out": "5歳未満",
+   "age_in": "就学前",
+   "limit_out": false,
+   "copay_out": false
+  },
+  {
+   "pref": "長野県",
+   "has_program": true,
+   "age_out": "15歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "岐阜県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": false,
+   "copay_out": false
+  },
+  {
+   "pref": "静岡県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "愛知県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "15歳年度末",
+   "limit_out": false,
+   "copay_out": false
+  },
+  {
+   "pref": "三重県",
+   "has_program": true,
+   "age_out": "12歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": true,
+   "copay_out": false
+  },
+  {
+   "pref": "滋賀県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": false,
+   "copay_out": false
+  },
+  {
+   "pref": "京都府",
+   "has_program": true,
+   "age_out": "15歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "大阪府",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "兵庫県",
+   "has_program": true,
+   "age_out": "15歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "奈良県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "和歌山県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": true,
+   "copay_out": false
+  },
+  {
+   "pref": "鳥取県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": false,
+   "copay_out": false
+  },
+  {
+   "pref": "島根県",
+   "has_program": true,
+   "age_out": "15歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "岡山県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "12歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "広島県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "山口県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "徳島県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "香川県",
+   "has_program": true,
+   "age_out": "9歳年度末",
+   "age_in": "9歳年度末",
+   "limit_out": false,
+   "copay_out": false
+  },
+  {
+   "pref": "愛媛県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "高知県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "福岡県",
+   "has_program": true,
+   "age_out": "15歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "佐賀県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "長崎県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "熊本県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "15歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "大分県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": false,
+   "copay_out": true
+  },
+  {
+   "pref": "宮崎県",
+   "has_program": true,
+   "age_out": "就学前",
+   "age_in": "就学前",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "鹿児島県",
+   "has_program": true,
+   "age_out": "18歳年度末",
+   "age_in": "18歳年度末",
+   "limit_out": true,
+   "copay_out": true
+  },
+  {
+   "pref": "沖縄県",
+   "has_program": true,
+   "age_out": "15歳年度末",
+   "age_in": "15歳年度末",
+   "limit_out": false,
+   "copay_out": false
+  }
+ ]
+}
