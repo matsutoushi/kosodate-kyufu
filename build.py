@@ -36,6 +36,22 @@ def related_card(prog_id=None, hikaku_pages=()):
 </a>"""
 
 
+NAV = [
+    ("./index.html", "ホーム"),
+    ("./shindan.html", "もらえる診断"),
+    ("./chiiki.html", "地域で調べる"),
+    ("./kakei.html", "家計の見直し"),
+]
+
+
+def site_nav(current=""):
+    """全ページ共通のナビ。下までスクロールしないと移動できない状態を解消する。"""
+    items = "".join(
+        f'<a href="{u}" class="{"on" if u.endswith(current) and current else ""}">{html.escape(t)}</a>'
+        for u, t in NAV)
+    return f'<nav class="gnav"><div class="wrap">{items}</div></nav>'
+
+
 # ---- 共通パーツ -------------------------------------------------------------
 
 def head(title, desc, path="/"):
@@ -142,6 +158,16 @@ table.rank th{color:var(--sub);font-size:.8rem}
 .stat div{flex:1;min-width:100px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;box-shadow:var(--shadow)}
 .stat .v{font-size:1.3rem;font-weight:800;color:var(--brand-d)}
 .stat .l{font-size:.74rem;color:var(--sub)}
+/* グローバルナビ(横スクロール可・スマホ前提) */
+.gnav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.gnav .wrap{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 12px}
+.gnav a{flex:0 0 auto;padding:12px 14px;font-size:.88rem;font-weight:700;color:var(--sub);
+  white-space:nowrap;border-bottom:3px solid transparent}
+.gnav a.on{color:var(--brand-d);border-bottom-color:var(--brand)}
+.gnav::-webkit-scrollbar{display:none}
+/* 地域の検索結果の補足 */
+.localnote{background:#fff8f4;border-radius:12px;padding:14px 16px;margin:14px 0;font-size:.9rem}
+.localnote a{font-weight:700}
 """
 
 def footer():
@@ -171,6 +197,7 @@ def build_index(data):
   <div class="logo">{html.escape(SITE_NAME)}</div>
   <div class="tag">{html.escape(TAGLINE)}</div>
 </div></header>
+{site_nav("index.html")}
 <div class="wrap">
   <div class="hero">
     <h1>知らないと損する、<br>子育ての「もらえるお金」</h1>
@@ -218,6 +245,7 @@ def build_program(p, data):
     parts = [head(f"{p['title']}｜{SITE_NAME}", p["summary"][:100], f"/{p['id']}.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
 <div class="wrap prog">
   <a class="back" href="./index.html">← 一覧にもどる</a>
   <h1 style="font-size:1.35rem;margin:.2em 0">{html.escape(p['title'])}</h1>
@@ -291,6 +319,7 @@ def build_shindan(data):
     parts = [head(f"もらえるお金しんだん｜{SITE_NAME}", "かんたんな質問で、あなたが受け取れる可能性のある子育て支援制度がわかります。", "/shindan.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
 <div class="wrap">
   <a class="back" href="./index.html">← ホーム</a>
   <h1 style="font-size:1.3rem">もらえるお金しんだん</h1>
@@ -385,6 +414,7 @@ def build_chiiki(iry, hikaku_pages=(), taiki=None):
                   f"全国{total}市区町村の子ども医療費助成(対象年齢・所得制限・自己負担)を検索できます。住む場所で驚くほど違います。", "/chiiki.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
 <div class="wrap">
   <a class="back" href="./index.html">← ホーム</a>
   <h1 style="font-size:1.35rem;margin:.2em 0">あなたの街の子育て環境を調べる</h1>
@@ -402,6 +432,23 @@ def build_chiiki(iry, hikaku_pages=(), taiki=None):
   医療費助成に加えて、<strong>保育園の待機児童数</strong>もあわせて表示します。</p>
   <input class="search" id="q" type="search" placeholder="例: 世田谷区／札幌市／京丹後市" autocomplete="off">
   <div id="mres"></div>
+
+  <div class="localnote">
+    <strong>💡 実は、給付金の多くは全国共通です</strong><br>
+    児童手当・出産育児一時金・育児休業給付金など、金額の大きい制度は、どこに住んでいても同じ内容で受け取れます。
+    「うちの地域はどうなんだろう」と不安になりがちですが、<strong>まずは全国共通の制度を取りこぼさないこと</strong>が
+    いちばん効きます。<br>
+    <a href="./shindan.html">▶ 受け取れる制度を30秒で確認する</a>
+  </div>
+
+  <div class="note">
+    <strong>地域によって変わるのは、主にこの3つです</strong><br>
+    ① 子ども医療費助成(上の検索で確認できます)<br>
+    ② 保育園の入りやすさ(同上)<br>
+    ③ 自治体独自の給付金(出産祝い金・入学祝い金など)<br>
+    ③については全国をまとめた公的データが存在しないため、検索結果の
+    「公式サイトで探す」リンクから、お住まいの自治体のページをご確認ください。
+  </div>
 
   <div class="sec-title">👑 いちばん手厚い自治体(通院 20歳年度末〜)</div>
   <table class="rank"><tr><th>自治体</th><th>通院</th><th>入院</th></tr>""")
@@ -445,13 +492,18 @@ function draw(){{
         + (r[6] === 0 ? '0人' : r[6] + '人')
         + '</strong>' + (r[7] > 0 ? '（うち1歳児 ' + r[7] + '人）' : '') + '</div>';
     }}
+    const q2 = encodeURIComponent(r[0] + r[1] + ' 子育て 給付金 助成');
     return '<div class="mrow"><div class="n">'+r[0]+' '+r[1]+'</div>'+
     '<div class="meta">通院 <strong>'+r[2]+'</strong>まで ／ 入院 <strong>'+r[3]+'</strong>まで</div>'+
     '<div style="margin-top:6px">'+
       (r[4]?'<span class="pill p-warn">所得制限あり</span>':'<span class="pill p-good">所得制限なし</span>')+
       (r[5]?'<span class="pill p-warn">自己負担あり</span>':'<span class="pill p-good">自己負担なし</span>')+
       (r[6] === 0 ? '<span class="pill p-good">待機児童ゼロ</span>' : '')+
-    '</div>' + taiki + '</div>';
+    '</div>' + taiki +
+    '<div style="margin-top:10px;font-size:.84rem">'+
+      '<a href="https://www.google.com/search?q='+q2+'" target="_blank" rel="noopener">'+
+      '🔎 '+r[1]+'の独自支援を公式サイトで探す</a></div>' +
+    '</div>';
   }}).join('');
 }}
 q.addEventListener('input', draw);
@@ -467,6 +519,7 @@ def build_kakei(hikaku_pages):
                   "/kakei.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
 <div class="wrap body">
   <a class="back" href="./index.html">← ホーム</a>
   <div class="pr">※本ページはプロモーションを含みます</div>
@@ -528,6 +581,7 @@ def build_policy():
                   f"{SITE_NAME}のプライバシーポリシーおよび免責事項です。", "/policy.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
 <div class="wrap body">
   <a class="back" href="./index.html">← ホーム</a>
   <h1 style="font-size:1.3rem">プライバシーポリシー・免責事項</h1>
@@ -593,6 +647,7 @@ def build_hikaku(pg, all_pages=()):
     parts = [head(f"{pg['title']}｜{SITE_NAME}", pg["lead"][:100], f"/{pg['id']}.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
 <div class="wrap">
   <a class="back" href="./index.html">← ホーム</a>
   <div class="pr">※本ページはプロモーションを含みます</div>
