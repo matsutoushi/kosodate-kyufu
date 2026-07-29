@@ -519,6 +519,18 @@ def build_chiiki(iry, hikaku_pages=(), taiki=None, iry_pref=None, cities=()):
     ※本表は公表資料をもとに整理したものです。実際の助成内容(対象範囲・手続き)は各市区町村の最新情報をご確認ください。
   </p>
 
+  <div class="sec-title">くわしく調べた自治体</div>
+  <a class="card" href="./tokyo23.html">
+    <div class="t">🗼 東京23区の子育て支援をくらべる</div>
+    <div class="s">23区すべての医療費・待機児童・区独自の制度を一覧で</div>
+    <div class="d">018サポートなど東京都共通の制度も含めてまとめました →</div>
+  </a>
+  <a class="card" href="./saitama-misato.html">
+    <div class="t">📍 埼玉県三郷市の子育て支援</div>
+    <div class="s">子育て移動支援(1万円相当)など市独自の制度</div>
+    <div class="d">市の公式サイトで確認した制度をまとめました →</div>
+  </a>
+
   {taiki_section(taiki) if taiki else ""}
 
   <div class="sec-title">住む場所は変えられなくても</div>
@@ -744,6 +756,40 @@ def build_city(c, iry_map, taiki_map, rank_map):
     return "".join(parts)
 
 
+def build_city_index(cities, iry_map, taiki_map, rank_map, group_pref, page_id, title, lead):
+    """同じ都道府県の自治体を横並びで比較できる一覧。引っ越し検討に直結する。"""
+    rows = [c for c in cities if c["pref"] == group_pref]
+    if not rows:
+        return None
+    parts = [head(f"{title}｜{SITE_NAME}", lead[:100], f"/{page_id}.html")]
+    parts.append(f"""
+<header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
+<div class="wrap body">
+  <a class="back" href="./chiiki.html">← 地域で調べる</a>
+  <h1 style="font-size:1.4rem;margin:.2em 0">{html.escape(title)}</h1>
+  <p>{html.escape(lead)}</p>
+  <div style="overflow-x:auto">
+  <table class="rank"><tr><th>自治体</th><th>医療費(通院)</th><th style="text-align:right">待機児童</th><th style="text-align:right">独自制度</th></tr>""")
+    for c in sorted(rows, key=lambda x: x["city"]):
+        k = (c["pref"], c["city"])
+        med = iry_map.get(k)
+        tk = taiki_map.get(k)
+        own = sum(1 for p in c["programs"] if "独自" in p.get("tag", ""))
+        parts.append(
+            f'<tr><td><a href="./{c["id"]}.html">{html.escape(c["city"])}</a></td>'
+            f'<td>{html.escape(med["age_out"]) if med else "—"}</td>'
+            f'<td style="text-align:right">{(str(tk["wait"]) + "人") if tk else "—"}</td>'
+            f'<td style="text-align:right">{own if own else "—"}</td></tr>')
+    parts.append("""</table></div>
+  <div class="note">「独自制度」は当サイトが公式サイトで確認できた区独自の支援の件数です。
+  0件の自治体に支援がないという意味ではなく、調査が追いついていないだけの場合があります。
+  各ページの公式リンクからご確認ください。</div>
+</div>""")
+    parts.append(footer())
+    return "".join(parts)
+
+
 def build_policy():
     """プライバシーポリシー・免責事項。GA4のCookie利用とアフィリエイト表記のために必要。"""
     parts = [head(f"プライバシーポリシー・免責事項｜{SITE_NAME}",
@@ -912,7 +958,17 @@ def main():
             with open(os.path.join(SITE, c["id"] + ".html"), "w", encoding="utf-8") as f:
                 f.write(build_city(c, iry_map, taiki_map, rank_map))
             city_pages.append(c)
-        print(f"  自治体ページ: {len(city_pages)}件")
+        idx = build_city_index(city_pages, iry_map, taiki_map, rank_map, "東京都", "tokyo23",
+                               "東京23区の子育て支援をくらべる",
+                               "東京23区は、東京都全域の制度(018サポートなど)が共通して使えるうえに、区ごとの独自支援があります。医療費助成・待機児童・区独自の制度をまとめて比べられます。")
+        if idx:
+            with open(os.path.join(SITE, "tokyo23.html"), "w", encoding="utf-8") as f:
+                f.write(idx)
+            city_pages_extra = ["tokyo23"]
+        else:
+            city_pages_extra = []
+        data["_city_extra"] = city_pages_extra
+        print(f"  自治体ページ: {len(city_pages)}件 + 一覧{len(city_pages_extra)}件")
     data["_cities"] = city_pages
 
     # 地域ページ
@@ -947,6 +1003,7 @@ def main():
     # sitemap.xml / robots.txt
     pages = ["/", "/shindan.html", "/chiiki.html", "/kakei.html", "/policy.html"]
     pages += [f"/{c['id']}.html" for c in (data.get("_cities") or [])]
+    pages += [f"/{x}.html" for x in (data.get("_city_extra") or [])]
     pages += [f"/{p['id']}.html" for p in data["programs"]]
     if os.path.exists(hikaku_path):
         pages += [f"/{pg['id']}.html" for pg in json.load(open(hikaku_path, encoding="utf-8"))["pages"]]
