@@ -616,6 +616,8 @@ def build_hikaku(pg, all_pages=()):
         for c in it["care"]:
             parts.append(f"<li>{html.escape(c)}</li>")
         parts.append("</ul>")
+        if it.get("notice"):
+            parts.append(f'<div class="note">📌 {html.escape(it["notice"])}</div>')
         url = it.get("aff_url") or it.get("official")
         if url:
             label = it.get("cta") or (f"{it['name']}を見る" if it.get("aff_url") else "公式サイトを見る")
