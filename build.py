@@ -23,6 +23,9 @@ GA4_ID = "G-ZW9ZH2FCPS"  # GA4測定ID。ここ1箇所で全ページに反映�
 GSC_TOKEN = "q0qAeAIxlo6jsG2oXXGQfxLfMg-FL-Gf--5B3YYFuDQ"  # Search Console 所有権確認
 VC_LINKSWITCH_PID = "892667160"  # バリューコマース LinkSwitch(通常リンクを自動でアフィリエイト化)
 VC_SID = "3776805"
+# お問い合わせフォーム(Googleフォーム)。メールアドレスを公開せずに連絡手段を用意するため。
+CONTACT_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSdzkTiL7dqWmIKnurJG4bOQoQVJV8vbX6ttMS0GXp1yR0VrAA/viewform"
+OPERATOR_NAME = "こそだて給付ナビ 編集部"
 
 def related_card(prog_id=None, hikaku_pages=()):
     """制度ページ下部の導線。制度ごとに広告を紐づけると不自然になるため、
@@ -183,7 +186,7 @@ def footer():
 </div>
 <footer><div class="wrap">
   {html.escape(SITE_NAME)} ／ <a href="./index.html">ホーム</a> ・ <a href="./shindan.html">もらえるお金しんだん</a> ・ <a href="./chiiki.html">地域別で調べる</a><br>
-  <a href="./policy.html">プライバシーポリシー・免責事項</a><br>
+  <a href="./policy.html">プライバシーポリシー・免責事項</a> ・ <a href="{html.escape(CONTACT_FORM)}" target="_blank" rel="noopener">お問い合わせ</a><br>
   出典は各制度ページの公式リンクをご確認ください。
 </div></footer>
 </body></html>"""
@@ -842,6 +845,15 @@ def build_policy():
 
   <div class="sec-title">リンクについて</div>
   <p>当サイトは原則リンクフリーです。リンクを行う場合の許可・連絡は不要です。</p>
+
+  <div class="sec-title">運営者情報</div>
+  <dl>
+    <dt>サイト名</dt><dd>{html.escape(SITE_NAME)}</dd>
+    <dt>URL</dt><dd>{BASE_URL}</dd>
+    <dt>運営者</dt><dd>{html.escape(OPERATOR_NAME)}</dd>
+    <dt>お問い合わせ</dt><dd>下記のフォームよりご連絡ください。掲載内容の誤りのご指摘も歓迎しています。</dd>
+  </dl>
+  <a class="offbtn" href="{html.escape(CONTACT_FORM)}" target="_blank" rel="noopener">✉️ お問い合わせフォーム</a>
 
   <p style="font-size:.78rem;color:#a99;margin-top:20px">制定日: 2026年7月25日</p>
 </div>""")

@@ -18,14 +18,39 @@ OUT = os.path.join(ROOT, "out", "instagram")
 W, H = 1080, 1350
 MARGIN = 80
 
-# 配色(サイトと揃える)
-CREAM = "#FFFDF9"
-INK = "#2B2B33"
-SUB = "#6B6B76"
-BRAND = "#FF8A65"
-BRAND_D = "#F4643B"
-ACCENT = "#4DB6AC"
-PEACH = "#FFD9C9"
+# 配色テーマ。投稿ごとに変えて、並んだときの単調さを避ける。
+# サイトのブランド(温かみ・信頼)から外れない範囲で振り幅を持たせている。
+THEMES = {
+    "peach": {  # 基本。温かい
+        "bg": "#FFFDF9", "ink": "#2B2B33", "sub": "#6B6B76",
+        "brand": "#FF8A65", "brand_d": "#F4643B", "accent": "#4DB6AC",
+        "tint": "#FFD9C9", "soft": "#FFF5EF", "note_bg": "#F2FAF8", "note_ink": "#3F6F69",
+    },
+    "mint": {  # 爽やか。データ系の回に
+        "bg": "#FAFDFC", "ink": "#25332F", "sub": "#63756F",
+        "brand": "#4DB6AC", "brand_d": "#2F8A80", "accent": "#F4643B",
+        "tint": "#CDEBE6", "soft": "#EFF9F7", "note_bg": "#FFF5EF", "note_ink": "#8A5A44",
+    },
+    "lavender": {  # 落ち着き。制度の解説回に
+        "bg": "#FCFBFE", "ink": "#2C2838", "sub": "#6B6478",
+        "brand": "#9B8AD4", "brand_d": "#6F5CB5", "accent": "#E8A33D",
+        "tint": "#E2DBF5", "soft": "#F4F1FC", "note_bg": "#FDF6EA", "note_ink": "#8A6A2F",
+    },
+    "navy": {  # 信頼・比較。ランキングや地域比較に
+        "bg": "#F7F9FC", "ink": "#1F2A3C", "sub": "#5C6B82",
+        "brand": "#3D6EA8", "brand_d": "#2A5285", "accent": "#E8A33D",
+        "tint": "#D5E2F2", "soft": "#EDF3FA", "note_bg": "#FDF6EA", "note_ink": "#7A5C22",
+    },
+    "coral": {  # 明るい。行動を促す回に
+        "bg": "#FFFBFA", "ink": "#33262A", "sub": "#7A6569",
+        "brand": "#EF6E7B", "brand_d": "#D14757", "accent": "#3FA796",
+        "tint": "#FBD5D9", "soft": "#FEF0F1", "note_bg": "#EFF9F7", "note_ink": "#2F6F66",
+    },
+}
+THEME_ORDER = ["peach", "mint", "lavender", "navy", "coral"]
+
+# 現在のテーマ(build_post のたびに差し替える)
+T = THEMES["peach"]
 
 FONT_DIR = "C:/Windows/Fonts"
 CANDIDATES = ["NotoSansJP-VF.ttf", "YuGothB.ttc", "meiryob.ttc", "YuGothR.ttc", "meiryo.ttc"]
@@ -95,14 +120,14 @@ def rounded(draw, box, r, fill, outline=None, w=0):
     draw.rounded_rectangle(box, radius=r, fill=fill, outline=outline, width=w)
 
 
-def base(bg=CREAM):
-    img = Image.new("RGB", (W, H), bg)
+def base(bg=None):
+    img = Image.new("RGB", (W, H), bg or T["bg"])
     return img, ImageDraw.Draw(img)
 
 
 def footer_brand(draw, dark=False):
     f = font(30, bold=True)
-    c = "#FFFFFF" if dark else SUB
+    c = "#FFFFFF" if dark else T["sub"]
     draw.text((MARGIN, H - 78), "@こそだて給付ナビ", font=f, fill=c)
     draw.text((W - MARGIN - draw.textlength("kosodate-kyufu.com", font=f), H - 78),
               "kosodate-kyufu.com", font=f, fill=c)
@@ -111,33 +136,70 @@ def footer_brand(draw, dark=False):
 # ---- スライド種別 -----------------------------------------------------------
 
 def slide_cover(s):
-    """表紙。ここで指を止めさせる。"""
+    """表紙。ここで指を止めさせる。layoutで見た目を変えられる。"""
+    layout = s.get("layout", "band")
+    if layout == "full":
+        return _cover_full(s)
+    if layout == "split":
+        return _cover_split(s)
+    return _cover_band(s)
+
+
+def _cover_band(s):
+    """上に色帯。落ち着いた定番。"""
     img, d = base()
-    # 上部の帯
-    d.rectangle([0, 0, W, 300], fill=PEACH)
+    d.rectangle([0, 0, W, 300], fill=T["tint"])
     if s.get("eyebrow"):
-        f = font(38)
-        d.text((MARGIN, 90), s["eyebrow"], font=f, fill=BRAND_D)
-
-    y = 200
-    if s.get("kicker"):
-        f = font(44)
-        d.text((MARGIN, y), s["kicker"], font=f, fill="#8A5A44")
-        y += 80
-
-    y = max(y, 360)
+        d.text((MARGIN, 90), s["eyebrow"], font=font(38), fill=T["brand_d"])
+    y = max(200, 360)
     f = font(int(s.get("size", 92)))
-    y = draw_wrapped(d, (MARGIN, y), s["title"], f, INK, W - MARGIN * 2, spacing=18)
-
+    y = draw_wrapped(d, (MARGIN, y), s["title"], f, T["ink"], W - MARGIN * 2, spacing=18)
     if s.get("sub"):
         y += 40
-        f2 = font(42, bold=False)
-        draw_wrapped(d, (MARGIN, y), s["sub"], f2, SUB, W - MARGIN * 2, spacing=12)
-
-    # 下部の誘導
-    rounded(d, [MARGIN, H - 250, W - MARGIN, H - 150], 50, BRAND)
-    f3 = font(44)
+        draw_wrapped(d, (MARGIN, y), s["sub"], font(42, bold=False), T["sub"], W - MARGIN * 2, spacing=12)
+    rounded(d, [MARGIN, H - 250, W - MARGIN, H - 150], 50, T["brand"])
     t = s.get("cta", "スワイプで見る →")
+    f3 = font(44)
+    d.text(((W - d.textlength(t, font=f3)) / 2, H - 228), t, font=f3, fill="#FFFFFF")
+    footer_brand(d)
+    return img
+
+
+def _cover_full(s):
+    """全面ブランド色。白抜きで強い。数字やニュース性の高い回に。"""
+    img, d = base(T["brand"])
+    if s.get("eyebrow"):
+        rounded(d, [MARGIN, 96, MARGIN + 40 + int(d.textlength(s["eyebrow"], font=font(36))), 168], 36, "#FFFFFF")
+        d.text((MARGIN + 20, 110), s["eyebrow"], font=font(36), fill=T["brand_d"])
+    y = 260
+    f = font(int(s.get("size", 92)))
+    y = draw_wrapped(d, (MARGIN, y), s["title"], f, "#FFFFFF", W - MARGIN * 2, spacing=18)
+    if s.get("sub"):
+        y += 44
+        draw_wrapped(d, (MARGIN, y), s["sub"], font(42, bold=False), "#FFF0E9", W - MARGIN * 2, spacing=12)
+    rounded(d, [MARGIN, H - 250, W - MARGIN, H - 150], 50, "#FFFFFF")
+    t = s.get("cta", "スワイプで見る →")
+    f3 = font(44)
+    d.text(((W - d.textlength(t, font=f3)) / 2, H - 228), t, font=f3, fill=T["brand_d"])
+    footer_brand(d, dark=True)
+    return img
+
+
+def _cover_split(s):
+    """下半分が色面。タイトルを上に置いて視線を上から下へ運ぶ。"""
+    img, d = base()
+    d.rectangle([0, int(H * 0.52), W, H], fill=T["tint"])
+    if s.get("eyebrow"):
+        d.text((MARGIN, 110), s["eyebrow"], font=font(38), fill=T["brand_d"])
+    y = 200
+    f = font(int(s.get("size", 92)))
+    y = draw_wrapped(d, (MARGIN, y), s["title"], f, T["ink"], W - MARGIN * 2, spacing=18)
+    if s.get("sub"):
+        y = max(y + 40, int(H * 0.52) + 60)
+        draw_wrapped(d, (MARGIN, y), s["sub"], font(42, bold=False), T["note_ink"], W - MARGIN * 2, spacing=12)
+    rounded(d, [MARGIN, H - 250, W - MARGIN, H - 150], 50, T["brand"])
+    t = s.get("cta", "スワイプで見る →")
+    f3 = font(44)
     d.text(((W - d.textlength(t, font=f3)) / 2, H - 228), t, font=f3, fill="#FFFFFF")
     footer_brand(d)
     return img
@@ -149,14 +211,14 @@ def slide_point(s, idx=None, total=None):
     y = 100
     if idx:
         # 番号バッジ
-        rounded(d, [MARGIN, y, MARGIN + 110, y + 66], 33, BRAND)
+        rounded(d, [MARGIN, y, MARGIN + 110, y + 66], 33, T["brand"])
         f = font(38)
         t = f"{idx}"
         d.text((MARGIN + (110 - d.textlength(t, font=f)) / 2, y + 10), t, font=f, fill="#FFFFFF")
         y += 100
 
     f = font(int(s.get("size", 66)))
-    y = draw_wrapped(d, (MARGIN, y), s["title"], f, INK, W - MARGIN * 2, spacing=16)
+    y = draw_wrapped(d, (MARGIN, y), s["title"], f, T["ink"], W - MARGIN * 2, spacing=16)
 
     if s.get("amount"):
         y += 30
@@ -170,23 +232,23 @@ def slide_point(s, idx=None, total=None):
         lines = wrap(d, s["amount"], fa, aw)
         pad = 34
         h = len(lines) * line_h(fa) + pad * 2 - int(fa.size * 0.35)
-        rounded(d, [MARGIN, y, W - MARGIN, y + h], 28, "#FFF5EF", outline=BRAND, w=3)
-        draw_wrapped(d, (MARGIN + 40, y + pad), s["amount"], fa, BRAND_D, aw, spacing=0, center=True)
+        rounded(d, [MARGIN, y, W - MARGIN, y + h], 28, T["soft"], outline=T["brand"], w=3)
+        draw_wrapped(d, (MARGIN + 40, y + pad), s["amount"], fa, T["brand_d"], aw, spacing=0, center=True)
         y += h + 30
 
     if s.get("body"):
         y += 20
         fb = font(42, bold=False)
-        y = draw_wrapped(d, (MARGIN, y), s["body"], fb, SUB, W - MARGIN * 2, spacing=14)
+        y = draw_wrapped(d, (MARGIN, y), s["body"], fb, T["sub"], W - MARGIN * 2, spacing=14)
 
     if s.get("note"):
         fn = font(36, bold=False)
         lines = wrap(d, s["note"], fn, W - MARGIN * 2 - 60)
         h = len(lines) * (line_h(fn) + 10) + 40
         yy = H - 190 - h
-        rounded(d, [MARGIN, yy, W - MARGIN, yy + h], 20, "#F2FAF8")
-        d.rectangle([MARGIN, yy, MARGIN + 8, yy + h], fill=ACCENT)
-        draw_wrapped(d, (MARGIN + 34, yy + 20), s["note"], fn, "#3F6F69", W - MARGIN * 2 - 60, spacing=10)
+        rounded(d, [MARGIN, yy, W - MARGIN, yy + h], 20, T["note_bg"])
+        d.rectangle([MARGIN, yy, MARGIN + 8, yy + h], fill=T["accent"])
+        draw_wrapped(d, (MARGIN + 34, yy + 20), s["note"], fn, T["note_ink"], W - MARGIN * 2 - 60, spacing=10)
 
     footer_brand(d)
     return img
@@ -197,7 +259,7 @@ def slide_list(s):
     img, d = base()
     y = 100
     f = font(60)
-    y = draw_wrapped(d, (MARGIN, y), s["title"], f, INK, W - MARGIN * 2, spacing=14)
+    y = draw_wrapped(d, (MARGIN, y), s["title"], f, T["ink"], W - MARGIN * 2, spacing=14)
     y += 40
 
     fi = font(44)
@@ -207,28 +269,28 @@ def slide_list(s):
         rowh = 122
         if y + rowh > H - 220:
             break
-        bg = "#FFFFFF" if i % 2 else "#FFF8F4"
+        bg = "#FFFFFF" if i % 2 else T["soft"]
         rounded(d, [MARGIN, y, W - MARGIN, y + rowh - 14], 18, bg)
         # 番号
-        d.ellipse([MARGIN + 24, y + 30, MARGIN + 76, y + 82], fill=BRAND)
+        d.ellipse([MARGIN + 24, y + 30, MARGIN + 76, y + 82], fill=T["brand"])
         t = str(i)
         d.text((MARGIN + 24 + (52 - d.textlength(t, font=fnum)) / 2, y + 42), t, font=fnum, fill="#FFFFFF")
         # 本文(名前と補足が重ならないよう行間を確保)
-        d.text((MARGIN + 104, y + 22), item["name"], font=fi, fill=INK)
+        d.text((MARGIN + 104, y + 22), item["name"], font=fi, fill=T["ink"])
         if item.get("meta"):
-            d.text((MARGIN + 104, y + 74), item["meta"], font=fs, fill=SUB)
+            d.text((MARGIN + 104, y + 74), item["meta"], font=fs, fill=T["sub"])
         y += rowh
 
     if s.get("note"):
         fn = font(36, bold=False)
-        draw_wrapped(d, (MARGIN, H - 250), s["note"], fn, SUB, W - MARGIN * 2, spacing=10)
+        draw_wrapped(d, (MARGIN, H - 250), s["note"], fn, T["sub"], W - MARGIN * 2, spacing=10)
     footer_brand(d)
     return img
 
 
 def slide_cta(s):
     """最終スライド。保存とプロフィール誘導。"""
-    img, d = base(INK)
+    img, d = base(T["ink"])
     y = 180
     f = font(76)
     y = draw_wrapped(d, (MARGIN, y), s.get("title", "保存して、あとで確認を"), f,
@@ -241,7 +303,7 @@ def slide_cta(s):
     y += 70
     rounded(d, [MARGIN, y, W - MARGIN, y + 200], 30, "#33313C")
     f2 = font(40)
-    d.text((MARGIN + 50, y + 40), "🔍 あなたの街の助成額は?", font=f2, fill=BRAND)
+    d.text((MARGIN + 50, y + 40), "🔍 あなたの街の助成額は?", font=f2, fill=T["brand"])
     f3 = font(36, bold=False)
     draw_wrapped(d, (MARGIN + 50, y + 100), "プロフィールのリンクから、全国1,740市区町村を検索できます。",
                  f3, "#C9C4CE", W - MARGIN * 2 - 100, spacing=8)
@@ -253,7 +315,9 @@ def slide_cta(s):
 RENDER = {"cover": slide_cover, "point": slide_point, "list": slide_list, "cta": slide_cta}
 
 
-def build_post(post):
+def build_post(post, index=0):
+    global T
+    T = THEMES.get(post.get("theme_color") or THEME_ORDER[index % len(THEME_ORDER)], THEMES["peach"])
     d = os.path.join(OUT, post["id"])
     os.makedirs(d, exist_ok=True)
     n = 0
@@ -277,9 +341,9 @@ def build_post(post):
 def main():
     posts = json.load(open(POSTS, encoding="utf-8"))["posts"]
     os.makedirs(OUT, exist_ok=True)
-    for p in posts:
-        n, d = build_post(p)
-        print(f"  {p['id']}: {n}枚 → {d}")
+    for i, p in enumerate(posts):
+        n, d = build_post(p, i)
+        print(f"  {p['id']}: {n}枚 [{p.get('theme_color') or THEME_ORDER[i % len(THEME_ORDER)]}] → {d}")
     print(f"\n完了: {len(posts)}投稿")
 
 
