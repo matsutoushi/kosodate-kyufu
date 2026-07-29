@@ -723,6 +723,8 @@ def build_city(c, iry_map, taiki_map, rank_map):
             parts.append('<p style="font-size:.9rem;color:var(--sub)">直近の調査では、希望しても入れなかった児童はいませんでした。ただし年度途中の入園は別なので、市の窓口で空き状況をご確認ください。</p>')
 
     parts.append(f'<div class="sec-title">💰 {html.escape(c["city"])}の支援制度</div>')
+    if c.get("own_note"):
+        parts.append(f'<div class="note">🔍 {html.escape(c["own_note"])}</div>')
     for p in c["programs"]:
         parts.append(f"""<div class="card" style="cursor:default">
   <div><span class="badge">{html.escape(p['tag'])}</span></div>
@@ -776,15 +778,18 @@ def build_city_index(cities, iry_map, taiki_map, rank_map, group_pref, page_id, 
         med = iry_map.get(k)
         tk = taiki_map.get(k)
         own = sum(1 for p in c["programs"] if "独自" in p.get("tag", ""))
+        own_txt = str(own) if own else ("なし" if c.get("checked_own") else "—")
         parts.append(
             f'<tr><td><a href="./{c["id"]}.html">{html.escape(c["city"])}</a></td>'
             f'<td>{html.escape(med["age_out"]) if med else "—"}</td>'
             f'<td style="text-align:right">{(str(tk["wait"]) + "人") if tk else "—"}</td>'
-            f'<td style="text-align:right">{own if own else "—"}</td></tr>')
+            f'<td style="text-align:right">{own_txt}</td></tr>')
     parts.append("""</table></div>
-  <div class="note">「独自制度」は当サイトが公式サイトで確認できた区独自の支援の件数です。
-  0件の自治体に支援がないという意味ではなく、調査が追いついていないだけの場合があります。
-  各ページの公式リンクからご確認ください。</div>
+  <div class="note">「独自制度」は、当サイトが公式サイトなどで確認できた<strong>その自治体独自の支援</strong>の件数です。
+  「なし」は調べたうえで独自の大きな現金給付が確認できなかったという意味で、支援が何もないわけではありません
+  (産後ケアや一時預かりなどのサービスは各区で実施されています)。<br>
+  なお各区が「出産応援ギフト」などの名前で案内している10万円分のギフトは、
+  <strong>国の給付に東京都が上乗せしたもの</strong>で、23区共通です。区独自の制度と混同されやすいので注意してください。</div>
 </div>""")
     parts.append(footer())
     return "".join(parts)
