@@ -307,7 +307,7 @@ def build_shindan(data):
         ("postnatal", "出産して1年以内(産後の体調や育児が不安)", ["sango-care"]),
         ("company", "会社員・公務員で産休・育休を取る(取った)", ["shussan-teate", "ikuji-kyugyo-kyufu"]),
         ("baby", "0〜2歳／未就学の子どもがいる", ["jido-teate", "kodomo-iryohi", "hoiku-mushouka"]),
-        ("shougaku", "小・中学生の子どもがいる", ["jido-teate", "shugaku-enjo", "kodomo-iryohi"]),
+        ("shougaku", "小・中学生の子どもがいる", ["jido-teate", "kyushoku", "shugaku-enjo", "kodomo-iryohi"]),
         ("koukou", "高校生年代の子どもがいる", ["jido-teate", "koko-shushi-kin", "koko-shogaku-kyufu"]),
         ("daigaku", "大学・専門学校への進学を控えている(在学中)", ["kyufu-shogakukin"]),
         ("tashi", "扶養している子どもが3人以上いる", ["jido-teate", "tashi-mushouka"]),
@@ -442,12 +442,16 @@ def build_chiiki(iry, hikaku_pages=(), taiki=None):
   </div>
 
   <div class="note">
-    <strong>地域によって変わるのは、主にこの3つです</strong><br>
-    ① 子ども医療費助成(上の検索で確認できます)<br>
-    ② 保育園の入りやすさ(同上)<br>
-    ③ 自治体独自の給付金(出産祝い金・入学祝い金など)<br>
-    ③については全国をまとめた公的データが存在しないため、検索結果の
-    「公式サイトで探す」リンクから、お住まいの自治体のページをご確認ください。
+    <strong>逆に、地域によって変わるのはこの4つです</strong><br>
+    ① <strong>子ども医療費助成</strong>(上の検索で確認できます)<br>
+    ② <strong>保育園の入りやすさ</strong>(同上)<br>
+    ③ <strong>高校授業料の上乗せ支援</strong> — 国の就学支援金に都道府県が独自に上乗せしています。
+    大阪府は所得制限なしで年63万円超の授業料にも対応、東京都は国と合わせて年最大50万1,000円など、
+    差がとても大きい部分です。<strong>多くは「県内進学」が条件</strong>なので越境通学は要注意。
+    <a href="./koko-shushi-kin.html">▶ くわしく</a><br>
+    ④ <strong>自治体独自の給付金・助成</strong>(出産祝い金、中学校の給食費無償化など)<br>
+    ③④は全国をまとめた公的データが存在しないため、検索結果の
+    「公式サイトで探す」リンクから、お住まいの自治体・都道府県のページをご確認ください。
   </div>
 
   <div class="sec-title">👑 いちばん手厚い自治体(通院 20歳年度末〜)</div>
