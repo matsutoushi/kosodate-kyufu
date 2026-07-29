@@ -414,7 +414,7 @@ def taiki_section(taiki):
 """
 
 
-def build_chiiki(iry, hikaku_pages=(), taiki=None, iry_pref=None):
+def build_chiiki(iry, hikaku_pages=(), taiki=None, iry_pref=None, cities=()):
     """全市区町村の「子育てのしやすさ」を検索できるページ。地域差の可視化がこのサイトの核。
     子ども医療費助成 + 保育園の待機児童数を1つの検索にまとめる。"""
     import json as _j
@@ -448,6 +448,7 @@ def build_chiiki(iry, hikaku_pages=(), taiki=None, iry_pref=None):
         ])
     pref_js = {k: [v.get("age_out"), v.get("limit_out"), v.get("copay_out"), v.get("has_program")]
                for k, v in pf.items()}
+    city_js = {f'{c["pref"]}{c["city"]}': c["id"] for c in (cities or [])}
     total = len(ms)
     n18 = sum(1 for m in ms if m["rank_out"] >= 18)
     nolimit = sum(1 for m in ms if not m["limit_out"])
@@ -528,6 +529,7 @@ def build_chiiki(iry, hikaku_pages=(), taiki=None, iry_pref=None):
 <script>
 const M = {_j.dumps(rows_js, ensure_ascii=False)};
 const PREF = {_j.dumps(pref_js, ensure_ascii=False)};
+const CITYPAGE = {_j.dumps(city_js, ensure_ascii=False)};
 const q = document.getElementById('q'), out = document.getElementById('mres');
 function draw(){{
   const v = q.value.trim();
@@ -577,6 +579,12 @@ function draw(){{
 
     // 次の行動
     const q2 = encodeURIComponent(pref + city + ' 子育て 給付金 助成');
+    const cp = CITYPAGE[pref + city];
+    if (cp) {{
+      h += '<div class="dsec"><div class="dh">📖 くわしい市の支援</div>'+
+        '<div class="meta">'+city+'独自の給付金・助成を調べてまとめました。</div>'+
+        '<a class="offbtn" style="margin-top:8px" href="./'+cp+'.html">'+city+'の子育て支援を見る</a></div>';
+    }}
     h += '<div class="dsec"><div class="dh">📋 この街で確認すること</div>'+
       '<div class="meta">出産祝い金・入学祝い金・中学校の給食費など、自治体独自の支援は公式サイトで確認できます。</div>'+
       '<div style="margin-top:8px;font-size:.86rem">'+
@@ -655,6 +663,83 @@ def build_kakei(hikaku_pages):
     ▶ 受け取れる制度も確認する
   </a>
 </div>""")
+    parts.append(footer())
+    return "".join(parts)
+
+
+def build_city(c, iry_map, taiki_map, rank_map):
+    """自治体ページ。全国データ(医療費・保育園)＋手作業で調べた市独自の支援。"""
+    key = (c["pref"], c["city"])
+    med = iry_map.get(key)
+    tk = taiki_map.get(key)
+    rank = rank_map.get(key)
+    name = f'{c["pref"]}{c["city"]}'
+
+    parts = [head(f"{name}の子育て支援・もらえるお金｜{SITE_NAME}",
+                  f"{name}の子ども医療費助成、保育園の待機児童、市独自の給付金・助成をまとめました。",
+                  f"/{c['id']}.html")]
+    parts.append(f"""
+<header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
+<div class="wrap body">
+  <a class="back" href="./chiiki.html">← 地域で調べる</a>
+  <h1 style="font-size:1.4rem;margin:.2em 0">{html.escape(name)}の子育て支援</h1>
+  <p>{html.escape(c['lead'])}</p>""")
+
+    if med:
+        parts.append(f"""
+  <div class="sec-title">🏥 こども医療費助成</div>
+  <div class="amount">通院 {html.escape(med['age_out'])}まで ／ 入院 {html.escape(med['age_in'])}まで</div>
+  <div style="margin:8px 0">
+    {'<span class="pill p-warn">所得制限あり</span>' if med['limit_out'] else '<span class="pill p-good">所得制限なし</span>'}
+    {'<span class="pill p-warn">自己負担あり</span>' if med['copay_out'] else '<span class="pill p-good">自己負担なし</span>'}
+  </div>""")
+        if rank:
+            parts.append(f'<p style="font-size:.9rem;color:var(--sub)">県内の手厚さ: {html.escape(c["pref"])}内 {rank[1]}市区町村中 <strong>{rank[0]}位</strong></p>')
+
+    if tk:
+        w = tk["wait"]
+        wa = tk["wait_age"]
+        parts.append(f"""
+  <div class="sec-title">🍼 保育園</div>
+  <div class="amount">待機児童 {('0人' if w == 0 else str(w) + '人')}（申込 {tk['apply']:,}人）</div>""")
+        if w > 0:
+            det = " / ".join(f"{lb} {wa.get(k,0)}人" for k, lb in
+                             (("0", "0歳"), ("1", "1歳"), ("2", "2歳"), ("3+", "3歳〜")) if wa.get(k, 0) > 0)
+            parts.append(f'<p style="font-size:.9rem;color:var(--sub)">内訳: {det}</p>')
+        else:
+            parts.append('<p style="font-size:.9rem;color:var(--sub)">直近の調査では、希望しても入れなかった児童はいませんでした。ただし年度途中の入園は別なので、市の窓口で空き状況をご確認ください。</p>')
+
+    parts.append(f'<div class="sec-title">💰 {html.escape(c["city"])}の支援制度</div>')
+    for p in c["programs"]:
+        parts.append(f"""<div class="card" style="cursor:default">
+  <div><span class="badge">{html.escape(p['tag'])}</span></div>
+  <div class="t" style="margin-top:6px">{html.escape(p['name'])}</div>
+  <div class="s">{html.escape(p['amount'])}</div>
+  <div class="d" style="margin:8px 0">{html.escape(p['summary'])}</div>
+  <dl style="margin:0">
+    <dt style="font-weight:800;font-size:.78rem;color:var(--accent);margin-top:10px">対象</dt>
+    <dd style="margin:2px 0 0;font-size:.9rem">{html.escape(p['target'])}</dd>
+    <dt style="font-weight:800;font-size:.78rem;color:var(--accent);margin-top:8px">申請</dt>
+    <dd style="margin:2px 0 0;font-size:.9rem">{html.escape(p['how'])}</dd>
+    <dt style="font-weight:800;font-size:.78rem;color:var(--accent);margin-top:8px">期限</dt>
+    <dd style="margin:2px 0 0;font-size:.9rem">{html.escape(p['deadline'])}</dd>
+  </dl>
+  <a class="offbtn" href="{html.escape(p['url'])}" target="_blank" rel="noopener">市の公式ページで確認</a>
+</div>""")
+
+    parts.append(f"""
+  <div class="note">📌 {html.escape(c['note'])}</div>
+  <div class="localnote">
+    <strong>全国共通の制度も忘れずに</strong><br>
+    児童手当・出産育児一時金・育児休業給付金などは、どこに住んでいても同じ内容で受け取れます。
+    市独自の支援とあわせて確認してください。<br>
+    <a href="./shindan.html">▶ 受け取れる制度を30秒で確認する</a>
+  </div>
+  <a class="offbtn" href="{html.escape(c['kosodate_top'])}" target="_blank" rel="noopener">🔗 {html.escape(c['city'])}の子育て支援ページ(公式)</a>
+""")
+    parts.append(related_card(None, [1]))
+    parts.append("</div>")
     parts.append(footer())
     return "".join(parts)
 
@@ -806,13 +891,37 @@ def main():
             with open(os.path.join(SITE, pg["id"] + ".html"), "w", encoding="utf-8") as f:
                 f.write(build_hikaku(pg, hk["pages"]))
         print(f"  比較ページ: {len(hk['pages'])}本")
+
+    # 自治体ページ(全国データが無いため手作業で調べた市独自の支援)
+    cities_path = os.path.join(ROOT, "data", "cities.json")
+    city_pages = []
+    if os.path.exists(cities_path) and os.path.exists(IRYOHI):
+        cj = json.load(open(cities_path, encoding="utf-8"))
+        _iry = json.load(open(IRYOHI, encoding="utf-8"))["municipalities"]
+        iry_map = {(m["pref"], m["city"]): m for m in _iry}
+        _tk = json.load(open(TAIKI, encoding="utf-8"))["municipalities"] if os.path.exists(TAIKI) else []
+        taiki_map = {(t["pref"], t["city"]): t for t in _tk}
+        bp = {}
+        for m in _iry:
+            bp.setdefault(m["pref"], []).append(m)
+        rank_map = {}
+        for pref, lst in bp.items():
+            for i, x in enumerate(sorted(lst, key=lambda x: (-x["rank_out"], x["limit_out"], x["copay_out"])), 1):
+                rank_map[(x["pref"], x["city"])] = (i, len(lst))
+        for c in cj["cities"]:
+            with open(os.path.join(SITE, c["id"] + ".html"), "w", encoding="utf-8") as f:
+                f.write(build_city(c, iry_map, taiki_map, rank_map))
+            city_pages.append(c)
+        print(f"  自治体ページ: {len(city_pages)}件")
+    data["_cities"] = city_pages
+
     # 地域ページ
     if os.path.exists(IRYOHI):
         iry = json.load(open(IRYOHI, encoding="utf-8"))
         tk = json.load(open(TAIKI, encoding="utf-8")) if os.path.exists(TAIKI) else None
         with open(os.path.join(SITE, "chiiki.html"), "w", encoding="utf-8") as f:
             ip = json.load(open(IRYOHI_PREF, encoding="utf-8")) if os.path.exists(IRYOHI_PREF) else None
-            f.write(build_chiiki(iry, data.get("_hikaku") or [], tk, ip))
+            f.write(build_chiiki(iry, data.get("_hikaku") or [], tk, ip, data.get("_cities") or []))
         if tk:
             print(f"  待機児童データ: {tk['count']}市区町村")
         print(f"  地域ページ: {iry['count']}市区町村")
@@ -826,6 +935,7 @@ def main():
         f.write(build_shindan(data))
     with open(os.path.join(SITE, "policy.html"), "w", encoding="utf-8") as f:
         f.write(build_policy())
+
     if data.get("_hikaku"):
         with open(os.path.join(SITE, "kakei.html"), "w", encoding="utf-8") as f:
             f.write(build_kakei(data["_hikaku"]))
@@ -836,6 +946,7 @@ def main():
 
     # sitemap.xml / robots.txt
     pages = ["/", "/shindan.html", "/chiiki.html", "/kakei.html", "/policy.html"]
+    pages += [f"/{c['id']}.html" for c in (data.get("_cities") or [])]
     pages += [f"/{p['id']}.html" for p in data["programs"]]
     if os.path.exists(hikaku_path):
         pages += [f"/{pg['id']}.html" for pg in json.load(open(hikaku_path, encoding="utf-8"))["pages"]]
