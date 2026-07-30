@@ -43,6 +43,7 @@ def related_card(prog_id=None, hikaku_pages=()):
 NAV = [
     ("./index.html", "ホーム"),
     ("./shindan.html", "もらえる診断"),
+    ("./ichiran.html", "金額の早見表"),
     ("./chiiki.html", "地域で調べる"),
     ("./kakei.html", "家計の見直し"),
 ]
@@ -219,6 +220,11 @@ def build_index(data):
     <div class="d">子ども医療費助成は自治体の制度。住む場所で驚くほど違います →</div>
   </a>
 
+  <div class="sec-title">制度をさがす</div>
+  <input class="search" id="pq" type="search" placeholder="例: 児童手当／医療費／高校／ひとり親" autocomplete="off">
+  <p style="font-size:.82rem;color:var(--sub);margin:4px 0 0">キーワードで下の制度一覧をしぼり込めます。
+  金額だけざっと見たい方は <a href="./ichiran.html"><strong>金額の早見表</strong></a> へ。</p>
+
   <div class="sec-title">場面から探す</div>
   <div class="cats">""")
     for c in cats:
@@ -229,9 +235,10 @@ def build_index(data):
         cprogs = [p for p in progs if p["category"] == c["id"]]
         if not cprogs:
             continue
-        parts.append(f'<div class="sec-title" id="{c["id"]}">{c["emoji"]} {html.escape(c["label"])}</div>')
+        parts.append(f'<div class="sec-title pgroup" id="{c["id"]}">{c["emoji"]} {html.escape(c["label"])}</div>')
         for p in cprogs:
-            parts.append(f"""<a class="card" href="./{p['id']}.html">
+            hay = html.escape((p["title"] + p["subtitle"] + p["summary"] + p.get("target", "")).lower())
+            parts.append(f"""<a class="card pcard" data-hay="{hay}" href="./{p['id']}.html">
   <div class="t">{html.escape(p['title'])}</div>
   <div class="s">{html.escape(p['subtitle'])}</div>
   <div class="d">{html.escape(p['summary'][:70])}…</div>
@@ -245,6 +252,23 @@ def build_index(data):
   <div class="d">{html.escape(p['lead'][:64])}… →</div>
 </a>""")
     parts.append("</div>")
+    parts.append("""<script>
+const pq = document.getElementById('pq');
+const cards = [...document.querySelectorAll('.pcard')];
+const groups = [...document.querySelectorAll('.pgroup')];
+pq && pq.addEventListener('input', () => {
+  const v = pq.value.trim().toLowerCase();
+  cards.forEach(c => { c.style.display = (!v || c.dataset.hay.includes(v)) ? '' : 'none'; });
+  groups.forEach(g => {
+    let el = g.nextElementSibling, any = false;
+    while (el && !el.classList.contains('pgroup') && !el.classList.contains('sec-title')) {
+      if (el.classList.contains('pcard') && el.style.display !== 'none') any = true;
+      el = el.nextElementSibling;
+    }
+    g.style.display = (!v || any) ? '' : 'none';
+  });
+});
+</script>""")
     parts.append(footer())
     return "".join(parts)
 
@@ -312,6 +336,17 @@ def build_program(p, data):
     else:
         parts.append(f'<div class="note">🔗 {html.escape(p["official_name"])}</div>')
     parts.append(f'<p style="font-size:.74rem;color:#a99;margin-top:16px">最終更新: {html.escape(p.get("updated",""))}／出典: {html.escape(p["official_name"])}</p>')
+    # 同じカテゴリの制度へ回遊(読んで終わりの行き止まりを防ぐ)
+    same = [x for x in data["programs"] if x["category"] == p["category"] and x["id"] != p["id"]][:3]
+    if same:
+        cat = next((c for c in data["categories"] if c["id"] == p["category"]), None)
+        label = f'{cat["emoji"]} {cat["label"]}' if cat else "同じ場面"
+        parts.append(f'<div class="sec-title">{html.escape(label)}の他の制度</div>')
+        for x in same:
+            parts.append(f"""<a class="card" href="./{x['id']}.html">
+  <div class="t">{html.escape(x['title'])}</div>
+  <div class="s">{html.escape(x['subtitle'])}</div>
+</a>""")
     parts.append(related_card(p["id"], data.get("_hikaku") or []))
     parts.append("</div>")
     parts.append(footer())
@@ -323,7 +358,7 @@ def build_shindan(data):
     hikaku_pages = data.get("_hikaku") or []
     # 簡易チェック: 状況にチェック → 該当しうる制度を表示(クライアントサイド)
     checks = [
-        ("pregnant", "いま妊娠中／妊娠を予定している", ["ninpu-shien-kyufu", "ninpu-kenshin", "shussan-ichijikin", "shussan-teate"]),
+        ("pregnant", "いま妊娠中／妊娠を予定している", ["ninpu-shien-kyufu", "ninpu-kenshin", "shussan-ichijikin", "shussan-teate", "iryohi-kojo"]),
         ("funin", "不妊治療を受けている／検討している", ["funin-chiryo"]),
         ("postnatal", "出産して1年以内(産後の体調や育児が不安)", ["sango-care"]),
         ("company", "会社員・公務員で産休・育休を取る(取った)", ["shussan-teate", "ikuji-kyugyo-kyufu"]),
@@ -334,8 +369,9 @@ def build_shindan(data):
         ("tashi", "扶養している子どもが3人以上いる", ["jido-teate", "tashi-mushouka"]),
         ("single", "ひとり親家庭である", ["jido-fuyo-teate", "hitorioya-iryohi", "kodomo-iryohi"]),
         ("shogai", "障害のある子どもを育てている", ["tokubetsu-jido-fuyo", "shogaiji-fukushi"]),
+        ("iryohi", "今年は医療費が多い(帝王切開・入院・通院が続いた)", ["kogaku-ryoyohi", "iryohi-kojo"]),
     ]
-    title_map = {p["id"]: p["title"] for p in progs}
+    title_map = {p["id"]: [p["title"], p["subtitle"]] for p in progs}
     import json as _j
     parts = [head(f"もらえるお金しんだん｜{SITE_NAME}", "かんたんな質問で、あなたが受け取れる可能性のある子育て支援制度がわかります。", "/shindan.html")]
     parts.append(f"""
@@ -366,12 +402,48 @@ function render(){{
   const r = document.getElementById('result');
   if(hit.size===0){{ r.innerHTML=''; return; }}
   let h = '<div class="sec-title">受け取れる可能性のある制度</div>';
-  hit.forEach(id=>{{ h += '<a class="card" href="./'+id+'.html"><div class="t">'+TITLES[id]+'</div><div class="d">タップで詳細と申請方法へ →</div></a>'; }});
+  hit.forEach(id=>{{ const t = TITLES[id]; h += '<a class="card" href="./'+id+'.html"><div class="t">'+t[0]+'</div><div class="s">'+t[1]+'</div><div class="d">タップで詳細と申請方法へ →</div></a>'; }});
   h += '<div class="note">※チェック内容から機械的に表示しています。実際の対象可否・金額は各公式ページと市区町村でご確認ください。</div>';
   r.innerHTML = h;
 }}
 boxes.forEach(b=>b.addEventListener('change',render));
 </script>""")
+    parts.append(footer())
+    return "".join(parts)
+
+
+def build_ichiran(data):
+    """金額の早見表。全制度を1画面でざっと見比べられる。SNSからの「まとめて見たい」需要に応える。"""
+    cats = data["categories"]
+    progs = data["programs"]
+    parts = [head(f"子育てでもらえるお金 金額の早見表｜{SITE_NAME}",
+                  "児童手当・出産育児一時金・高校無償化など、子育て世帯がもらえるお金の金額を一覧表にまとめました。",
+                  "/ichiran.html")]
+    parts.append(f"""
+<header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav("ichiran.html")}
+<div class="wrap">
+  <a class="back" href="./index.html">← ホーム</a>
+  <h1 style="font-size:1.35rem;margin:.2em 0">金額の早見表</h1>
+  <p style="color:var(--sub);font-size:.92rem">全{len(progs)}制度の「いくらもらえるか」を一覧にしました。
+  制度名をタップすると、対象者や申請方法のくわしい解説に飛べます。</p>""")
+    for c in cats:
+        cprogs = [p for p in progs if p["category"] == c["id"]]
+        if not cprogs:
+            continue
+        parts.append(f'<div class="sec-title">{c["emoji"]} {html.escape(c["label"])}</div>')
+        parts.append('<div style="overflow-x:auto"><table class="rank"><tr><th style="min-width:9em">制度</th><th>金額・内容</th></tr>')
+        for p in cprogs:
+            parts.append(
+                f'<tr><td><a href="./{p["id"]}.html"><strong>{html.escape(p["title"])}</strong></a>'
+                f'<div style="font-size:.76rem;color:var(--sub)">{html.escape(p["subtitle"])}</div></td>'
+                f'<td style="font-size:.88rem">{html.escape(p["amount"])}</td></tr>')
+        parts.append("</table></div>")
+    parts.append("""
+  <div class="note">📌 金額・条件は改正や自治体によって変わります。この表は概要をつかむためのもので、
+  申請前に必ず各制度ページの公式リンクからご確認ください。</div>
+  <a class="cta" href="./shindan.html" style="display:block;text-align:center">▶ 自分がもらえる制度を30秒でしんだん</a>
+</div>""")
     parts.append(footer())
     return "".join(parts)
 
@@ -1006,6 +1078,8 @@ def main():
             f.write(build_program(p, data))
     with open(os.path.join(SITE, "shindan.html"), "w", encoding="utf-8") as f:
         f.write(build_shindan(data))
+    with open(os.path.join(SITE, "ichiran.html"), "w", encoding="utf-8") as f:
+        f.write(build_ichiran(data))
     with open(os.path.join(SITE, "policy.html"), "w", encoding="utf-8") as f:
         f.write(build_policy())
 
@@ -1018,7 +1092,7 @@ def main():
         f.write(DOMAIN + "\n")
 
     # sitemap.xml / robots.txt
-    pages = ["/", "/shindan.html", "/chiiki.html", "/kakei.html", "/policy.html"]
+    pages = ["/", "/shindan.html", "/ichiran.html", "/chiiki.html", "/kakei.html", "/policy.html"]
     pages += [f"/{c['id']}.html" for c in (data.get("_cities") or [])]
     pages += [f"/{x}.html" for x in (data.get("_city_extra") or [])]
     pages += [f"/{p['id']}.html" for p in data["programs"]]
