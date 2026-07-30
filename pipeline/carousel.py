@@ -120,6 +120,25 @@ def rounded(draw, box, r, fill, outline=None, w=0):
     draw.rounded_rectangle(box, radius=r, fill=fill, outline=outline, width=w)
 
 
+EMOJI_FONT = "C:/Windows/Fonts/seguiemj.ttf"
+
+
+def draw_emoji(img, ch, size, xy):
+    """Windowsのカラー絵文字(COLR)を描く。文字だけの単調さを解消する視覚アンカー。"""
+    try:
+        f = ImageFont.truetype(EMOJI_FONT, size)
+        layer = Image.new("RGBA", (size + 40, size + 40), (0, 0, 0, 0))
+        ImageDraw.Draw(layer).text((10, 10), ch, font=f, embedded_color=True)
+        img.paste(layer, xy, layer)
+    except Exception:
+        pass
+
+
+def deco_corner(d):
+    """右上にテーマ色のやわらかい円。余白の単調さを消す。"""
+    d.ellipse([W - 240, -160, W + 160, 240], fill=T["soft"])
+
+
 def base(bg=None):
     img = Image.new("RGB", (W, H), bg or T["bg"])
     return img, ImageDraw.Draw(img)
@@ -156,7 +175,10 @@ def _cover_band(s):
     y = draw_wrapped(d, (MARGIN, y), s["title"], f, T["ink"], W - MARGIN * 2, spacing=18)
     if s.get("sub"):
         y += 40
-        draw_wrapped(d, (MARGIN, y), s["sub"], font(42, bold=False), T["sub"], W - MARGIN * 2, spacing=12)
+        y = draw_wrapped(d, (MARGIN, y), s["sub"], font(42, bold=False), T["sub"], W - MARGIN * 2, spacing=12)
+    if s.get("emoji"):
+        ez = 210
+        draw_emoji(img, s["emoji"], ez, (int((W - ez) / 2), max(int(y) + 30, H - 500)))
     rounded(d, [MARGIN, H - 250, W - MARGIN, H - 150], 50, T["brand"])
     t = s.get("cta", "スワイプで見る →")
     f3 = font(44)
@@ -176,7 +198,10 @@ def _cover_full(s):
     y = draw_wrapped(d, (MARGIN, y), s["title"], f, "#FFFFFF", W - MARGIN * 2, spacing=18)
     if s.get("sub"):
         y += 44
-        draw_wrapped(d, (MARGIN, y), s["sub"], font(42, bold=False), "#FFF0E9", W - MARGIN * 2, spacing=12)
+        y = draw_wrapped(d, (MARGIN, y), s["sub"], font(42, bold=False), "#FFF0E9", W - MARGIN * 2, spacing=12)
+    if s.get("emoji"):
+        ez = 210
+        draw_emoji(img, s["emoji"], ez, (int((W - ez) / 2), max(int(y) + 30, H - 500)))
     rounded(d, [MARGIN, H - 250, W - MARGIN, H - 150], 50, "#FFFFFF")
     t = s.get("cta", "スワイプで見る →")
     f3 = font(44)
@@ -196,7 +221,10 @@ def _cover_split(s):
     y = draw_wrapped(d, (MARGIN, y), s["title"], f, T["ink"], W - MARGIN * 2, spacing=18)
     if s.get("sub"):
         y = max(y + 40, int(H * 0.52) + 60)
-        draw_wrapped(d, (MARGIN, y), s["sub"], font(42, bold=False), T["note_ink"], W - MARGIN * 2, spacing=12)
+        y = draw_wrapped(d, (MARGIN, y), s["sub"], font(42, bold=False), T["note_ink"], W - MARGIN * 2, spacing=12)
+    if s.get("emoji"):
+        ez = 210
+        draw_emoji(img, s["emoji"], ez, (int((W - ez) / 2), max(int(y) + 30, H - 500)))
     rounded(d, [MARGIN, H - 250, W - MARGIN, H - 150], 50, T["brand"])
     t = s.get("cta", "スワイプで見る →")
     f3 = font(44)
@@ -208,6 +236,9 @@ def _cover_split(s):
 def slide_point(s, idx=None, total=None):
     """本文スライド。1枚1メッセージ。"""
     img, d = base()
+    if s.get("emoji"):
+        deco_corner(d)
+        draw_emoji(img, s["emoji"], 120, (W - MARGIN - 130, 78))
     y = 100
     if idx:
         # 番号バッジ
@@ -218,7 +249,8 @@ def slide_point(s, idx=None, total=None):
         y += 100
 
     f = font(int(s.get("size", 66)))
-    y = draw_wrapped(d, (MARGIN, y), s["title"], f, T["ink"], W - MARGIN * 2, spacing=16)
+    tw = W - MARGIN * 2 - (150 if s.get("emoji") else 0)
+    y = draw_wrapped(d, (MARGIN, y), s["title"], f, T["ink"], tw, spacing=16)
 
     if s.get("amount"):
         y += 30
