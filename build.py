@@ -933,6 +933,63 @@ def build_policy():
     return "".join(parts)
 
 
+def build_article(a, articles=()):
+    """解説記事ページ。制度でも比較でもない読み物を汎用に描く。
+    data/articles.json に足すだけでページが増える(将来の税金まわりもここに置く)。"""
+    parts = [head(f"{a['title']}｜{SITE_NAME}", a["desc"], f"/{a['id']}.html")]
+    parts.append(f"""
+<header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
+<div class="wrap body">
+  <a class="back" href="./hikaku-furusato.html">← ふるさと納税の比較へ</a>
+  <div class="pr">※本ページはプロモーションを含みます</div>
+  <h1 style="font-size:1.35rem;margin:.2em 0">{html.escape(a['title'])}</h1>
+  <div class="s" style="margin:.2em 0 1em">最終更新: {html.escape(a.get('updated',''))}</div>
+  <p>{html.escape(a['lead'])}</p>""")
+
+    for s in a.get("sections", []):
+        parts.append(f'<div class="sec-title">{html.escape(s["h"])}</div>')
+        for para in s.get("p", []):
+            parts.append(f"<p>{html.escape(para)}</p>")
+        if s.get("list"):
+            parts.append('<ul class="tips">')
+            for it in s["list"]:
+                parts.append(f"<li>{html.escape(it)}</li>")
+            parts.append("</ul>")
+        if s.get("note"):
+            parts.append(f'<div class="note">📌 {html.escape(s["note"])}</div>')
+
+    if a.get("faq"):
+        parts.append('<div class="sec-title">よくある質問</div>')
+        for q in a["faq"]:
+            parts.append('<div class="card" style="cursor:default">'
+                         f'<div class="t">{html.escape(q["q"])}</div>'
+                         f'<div class="d" style="margin-top:6px">{html.escape(q["a"])}</div></div>')
+
+    parts.append('<a class="cta" href="./hikaku-furusato.html" style="display:block;text-align:center">'
+                 f'{html.escape(a.get("cta_text", "ふるさと納税の申し込み先をくらべる"))} →</a>')
+
+    nxt = {x["id"]: x for x in articles}.get(a.get("next"))
+    if nxt:
+        parts.append('<div class="sec-title">あわせて読みたい</div>'
+                     f'<a class="card" href="./{nxt["id"]}.html">'
+                     f'<div class="t">{nxt.get("emoji", "")} {html.escape(nxt["title"])}</div>'
+                     f'<div class="d">{html.escape(nxt["desc"][:70])}… →</div></a>')
+
+    if a.get("official"):
+        parts.append('<div class="sec-title">公式情報</div><ul class="tips">')
+        for o in a["official"]:
+            parts.append(f'<li><a href="{html.escape(o["url"])}" target="_blank" rel="noopener">'
+                         f'{html.escape(o["name"])}</a></li>')
+        parts.append("</ul>")
+
+    parts.append('<div class="note">制度の内容や金額は変わることがあります。'
+                 '実際の手続きの前に、必ず公式ページや各自治体の案内でご確認ください。'
+                 'なお当サイトは個別の税務相談には応じられません。</div>')
+    parts.append("</div>" + footer())
+    return "".join(parts)
+
+
 def hikaku_cards(pages, exclude=None):
     """比較ページ同士の相互リンク(カード)。"""
     out = []
@@ -962,7 +1019,14 @@ def build_hikaku(pg, all_pages=()):
   <ul class="tips">""")
     for s in pg["howto"]:
         parts.append(f"<li>{html.escape(s)}</li>")
-    parts.append('</ul><div class="sec-title">主要サイトの選び方</div>')
+    parts.append("</ul>")
+    # 比較ページに紐づく解説記事(あれば)。申し込み前に読ませたいものを先に置く。
+    for a in (pg.get("_articles") or []):
+        parts.append(f"""<a class="card" href="./{a['id']}.html">
+  <div class="t">{a.get('emoji', '')} {html.escape(a['title'])}</div>
+  <div class="d">{html.escape(a['desc'][:80])}… →</div>
+</a>""")
+    parts.append('<div class="sec-title">主要サイトの選び方</div>')
 
     for it in pg["items"]:
         parts.append(f"""<div class="card" style="cursor:default">
@@ -1018,14 +1082,29 @@ def main():
             p["_enrich"] = enrich.get(p["id"])
     os.makedirs(SITE, exist_ok=True)
     # 比較ページ(収益)
+    # 解説記事は比較ページより先に読む(比較ページ側に記事への導線を差し込むため)
+    articles_path = os.path.join(ROOT, "data", "articles.json")
+    arts = []
+    if os.path.exists(articles_path):
+        arts = json.load(open(articles_path, encoding="utf-8"))["articles"]
+        data["_articles"] = arts
+
     hikaku_path = os.path.join(ROOT, "data", "hikaku.json")
     if os.path.exists(hikaku_path):
         hk = json.load(open(hikaku_path, encoding="utf-8"))
         data["_hikaku"] = hk["pages"]
         for pg in hk["pages"]:
+            if pg["id"] == "hikaku-furusato":
+                pg["_articles"] = arts
             with open(os.path.join(SITE, pg["id"] + ".html"), "w", encoding="utf-8") as f:
                 f.write(build_hikaku(pg, hk["pages"]))
         print(f"  比較ページ: {len(hk['pages'])}本")
+
+    for a in arts:
+        with open(os.path.join(SITE, a["id"] + ".html"), "w", encoding="utf-8") as f:
+            f.write(build_article(a, arts))
+    if arts:
+        print(f"  解説記事: {len(arts)}本")
 
     # 自治体ページ(全国データが無いため手作業で調べた市独自の支援)
     cities_path = os.path.join(ROOT, "data", "cities.json")
@@ -1096,6 +1175,7 @@ def main():
     pages += [f"/{c['id']}.html" for c in (data.get("_cities") or [])]
     pages += [f"/{x}.html" for x in (data.get("_city_extra") or [])]
     pages += [f"/{p['id']}.html" for p in data["programs"]]
+    pages += [f"/{a['id']}.html" for a in (data.get("_articles") or [])]
     if os.path.exists(hikaku_path):
         pages += [f"/{pg['id']}.html" for pg in json.load(open(hikaku_path, encoding="utf-8"))["pages"]]
     today = data.get("updated", "")

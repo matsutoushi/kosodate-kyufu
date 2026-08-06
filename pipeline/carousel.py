@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 POSTS = os.path.join(ROOT, "data", "posts.json")
-OUT = os.path.join(ROOT, "out", "instagram")
+OUT = os.path.join(ROOT, "out", "instagram", "carousels")
 
 W, H = 1080, 1350
 MARGIN = 80
