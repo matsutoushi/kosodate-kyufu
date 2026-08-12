@@ -1257,7 +1257,8 @@ def build_article(a, articles=()):
                          f'<div class="t">{html.escape(q["q"])}</div>'
                          f'<div class="d" style="margin-top:6px">{html.escape(q["a"])}</div></div>')
 
-    parts.append('<a class="cta" href="./hikaku-furusato.html" style="display:block;text-align:center">'
+    parts.append(f'<a class="cta" href="{html.escape(a.get("cta_href", "./hikaku-furusato.html"))}" '
+                 'style="display:block;text-align:center">'
                  f'{html.escape(a.get("cta_text", "ふるさと納税の申し込み先をくらべる"))} →</a>')
 
     nxt = {x["id"]: x for x in articles}.get(a.get("next"))
