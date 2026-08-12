@@ -1086,28 +1086,59 @@ def build_kabe():
   }}
 
   function draw(cur){{
-    var ctx=C.getContext('2d'), W=C.width, Hh=C.height, P=44;
+    var ctx=C.getContext('2d'), W=C.width, Hh=C.height, PL=68, PR=16, PT=46, PB=40;
     ctx.clearRect(0,0,W,Hh);
-    var max=2500000, ny=[], mx=0;
-    for(var x=0;x<=max;x+=10000){{ var v=net(x); ny.push([x,v]); if(v>mx) mx=v; }}
-    var sx=function(x){{return P+(W-P*1.4)*x/max;}}, sy=function(v){{return Hh-P-(Hh-P*1.8)*v/mx;}};
+    var max=2500000, ny=[], lo=Infinity, hi=-Infinity;
+    for(var x=0;x<=max;x+=5000){{
+      var v=net(x); ny.push([x,v]);
+      if(v<lo) lo=v; if(v>hi) hi=v;
+    }}
+    // 縦軸は0からではなくデータの範囲にあわせる。
+    // 0から描くと直線に見えてしまい、壁による折れ曲がりが読み取れないため。
+    var pad=(hi-lo)*0.12 || 10000; lo-=pad; hi+=pad;
+    var sx=function(x){{return PL+(W-PL-PR)*x/max;}};
+    var sy=function(v){{return Hh-PB-(Hh-PT-PB)*(v-lo)/(hi-lo);}};
+
+    // 横目盛り(縦軸のラベル)
+    ctx.font='11px sans-serif'; ctx.textAlign='right';
+    var step=Math.pow(10,Math.floor(Math.log(hi-lo)/Math.LN10))/2;
+    if((hi-lo)/step>7) step*=2;
+    for(var g=Math.ceil(lo/step)*step; g<=hi; g+=step){{
+      ctx.strokeStyle='#F0EAE4'; ctx.beginPath();
+      ctx.moveTo(PL,sy(g)); ctx.lineTo(W-PR,sy(g)); ctx.stroke();
+      ctx.fillStyle='#8A8A94'; ctx.fillText((Math.round(g/10000))+'万', PL-8, sy(g)+4);
+    }}
+    ctx.textAlign='left';
+
     // 壁の縦線
     var walls=[[1060000,'106万'],[1230000,'123万'],[1300000,'130万'],[1600000,'160万']];
-    ctx.font='11px sans-serif';
     walls.forEach(function(w){{
-      ctx.strokeStyle='#E7E0DA'; ctx.setLineDash([4,4]); ctx.beginPath();
-      ctx.moveTo(sx(w[0]),P*0.6); ctx.lineTo(sx(w[0]),Hh-P); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle='#8A8A94'; ctx.fillText(w[1], sx(w[0])-14, P*0.5);
+      ctx.strokeStyle='#D9CEC6'; ctx.setLineDash([4,4]); ctx.beginPath();
+      ctx.moveTo(sx(w[0]),PT); ctx.lineTo(sx(w[0]),Hh-PB); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle='#8A8A94'; ctx.textAlign='center';
+      ctx.fillText(w[1], sx(w[0]), PT-6); ctx.textAlign='left';
     }});
+    // 横軸の目盛り
+    ctx.fillStyle='#8A8A94'; ctx.textAlign='center';
+    [0,500000,1000000,1500000,2000000,2500000].forEach(function(x){{
+      ctx.fillText((x/10000)+'万', sx(x), Hh-PB+16);
+    }});
+    ctx.textAlign='left';
+
     // 手取りの線
     ctx.strokeStyle='#FF8A65'; ctx.lineWidth=3; ctx.beginPath();
     ny.forEach(function(p,i){{ i?ctx.lineTo(sx(p[0]),sy(p[1])):ctx.moveTo(sx(p[0]),sy(p[1])); }});
     ctx.stroke();
     // 現在地
+    ctx.strokeStyle='#F4643B'; ctx.setLineDash([3,3]); ctx.lineWidth=1; ctx.beginPath();
+    ctx.moveTo(sx(cur),PT); ctx.lineTo(sx(cur),Hh-PB); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle='#F4643B'; ctx.beginPath();
     ctx.arc(sx(cur),sy(net(cur)),7,0,Math.PI*2); ctx.fill();
+
     ctx.fillStyle='#2B2B33'; ctx.font='bold 13px sans-serif';
-    ctx.fillText('世帯の手取り(目安)', P, P*0.5);
+    ctx.fillText('世帯の手取り(目安)', PL, 16);
+    ctx.fillStyle='#8A8A94'; ctx.font='10px sans-serif';
+    ctx.fillText('※縦軸は0からではありません(変化を見やすくするため)', PL, 30);
   }}
 
   function update(){{
