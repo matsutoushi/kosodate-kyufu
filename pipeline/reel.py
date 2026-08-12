@@ -1028,6 +1028,113 @@ def render_iryohikojo(T):
     return frame, 41.6
 
 
+def render_kabe(T):
+    """M案: 年収の壁。制度改正で壁が動いたことを整理する。7シーン・約30秒。"""
+    em = emoji_layer("🧱", 200)
+    hook = text_layer("103万の壁、まだ\n気にしていませんか", font(84), T["ink"])
+
+    s2 = text_layer("2025年の改正で、なくなりました", font(56), T["sub"])
+    b1 = bar_layer("基礎控除", "48万円 → 最大 95万円", T)
+    b2 = bar_layer("給与所得控除の最低保障", "55万円 → 65万円", T)
+    s2b = text_layer("足すと 160万円", font(88), T["brand_d"])
+    s2c = text_layer("ここまで所得税はかかりません", font(50), T["ink"])
+
+    s3 = text_layer("いまの壁は この4つ", font(58), T["sub"])
+    w1 = bar_layer("106万円", "社会保険に加入。条件つき", T)
+    w2 = bar_layer("123万円", "配偶者控除→配偶者特別控除に変わるだけ", T)
+    w3 = bar_layer("160万円", "所得税がかかり、控除も減り始める", T)
+    w4 = bar_layer("201万5,999円", "配偶者特別控除が終わる", T)
+
+    s4 = text_layer("本当の崖は 社会保険です", font(62), T["ink"])
+    m1 = bar_layer("年収105万円のとき", "手取り 105万円", T)
+    m2 = bar_layer("年収106万円のとき", "手取り 90.1万円", T)
+    s4b = text_layer("1万円増やしただけで", font(52), T["sub"])
+    cf = font(140)
+    s4c = text_layer("元に戻るのは 年収122万円あたり", font(50), T["ink"])
+
+    s5a = text_layer("よくある誤解", font(56), T["sub"])
+    s5b = text_layer("123万円では\n手取りは減りません", font(76), T["ink"])
+    s5c = text_layer("控除の名前が変わるだけ。金額は満額のままです", font(46), T["sub"])
+
+    s6 = text_layer("しかも106万の壁は消えていきます", font(54), T["sub"])
+    y1 = bar_layer("2027年10月", "従業員36人以上の勤務先に拡大", T)
+    y2 = bar_layer("2029年10月 → 2032年10月", "21人以上 → 11人以上", T)
+    y3 = bar_layer("2035年10月", "10人以下も対象に。規模の条件が消える", T)
+
+    c = cta_save(T, "働き方を決める前に", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 3.0:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1010, dy=int((1 - p) * 55))
+        elif t < 9.4:
+            tt = t - 3.0
+            paste_center(img, s2, 430, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                q = ease_out(min(1, (tt - 0.4) / 0.4))
+                paste_at(img, b1, 90, 660, alpha=q, dx=int((1 - q) * -70))
+            if tt > 1.4:
+                q = ease_out(min(1, (tt - 1.4) / 0.4))
+                paste_at(img, b2, 90, 860, alpha=q, dx=int((1 - q) * -70))
+            if tt > 2.6:
+                pp = min(1, (tt - 2.6) / 0.35)
+                sc = 1.3 - 0.3 * ease_out(pp)
+                z = s2b.resize((int(s2b.width * sc), int(s2b.height * sc)))
+                paste_center(img, z, 1120, alpha=pp)
+            if tt > 3.4:
+                paste_center(img, s2c, 1310, alpha=ease_out(min(1, (tt - 3.4) / 0.5)))
+        elif t < 16.0:
+            tt = t - 9.4
+            paste_center(img, s3, 400, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([w1, w2, w3, w4]):
+                st = 0.4 + i * 1.25
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 640 + i * 205, alpha=q, dx=int((1 - q) * -70))
+        elif t < 24.5:
+            tt = t - 16.0
+            paste_center(img, s4, 420, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.5:
+                q = ease_out(min(1, (tt - 0.5) / 0.4))
+                paste_at(img, m1, 90, 680, alpha=q, dx=int((1 - q) * -70))
+            if tt > 1.5:
+                q = ease_out(min(1, (tt - 1.5) / 0.4))
+                paste_at(img, m2, 90, 880, alpha=q, dx=int((1 - q) * -70))
+            if tt > 2.8:
+                paste_center(img, s4b, 1080, alpha=ease_out(min(1, (tt - 2.8) / 0.4)))
+                cp = ease_out(min(1, max(0.0, (tt - 3.2) / 1.6)))
+                txt = "-" + f"{int(149000 * cp):,}" + " 円"
+                tw = d.textlength(txt, font=cf)
+                d.text(((W - tw) / 2, 1150), txt, font=cf, fill=T["brand_d"])
+                if cp >= 1.0:
+                    paste_center(img, s4c, 1390, alpha=ease_out(min(1, (tt - 5.2) / 0.5)))
+        elif t < 30.5:
+            tt = t - 24.5
+            paste_center(img, s5a, 600, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s5b, 860, alpha=ease_out(min(1, max(0.0, tt - 0.3) / 0.5)))
+            paste_center(img, s5c, 1150, alpha=ease_out(min(1, max(0.0, tt - 0.9) / 0.5)))
+        elif t < 36.5:
+            tt = t - 30.5
+            paste_center(img, s6, 420, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([y1, y2, y3]):
+                st = 0.4 + i * 1.2
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 680 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        else:
+            draw_cta(img, c, t - 36.5)
+        return img
+
+    return frame, 41.5
+
+
 # --- カバー画像 -------------------------------------------------------------
 # リールは全要素がフェードインするので1フレーム目がほぼ空白。Instagramに自動選択
 # させるとプロフィールが白紙で並ぶため、カバーは必ず別途アップロードする。
@@ -1068,6 +1175,7 @@ COVERS = {
     "kyushoku-2026":   ("🍚", "2026年4月から", "給食費が変わる", "月5,200円・手続き不要"),
     "kogaku-ryoyohi":  ("🏥", "帝王切開の入院費", "いくら戻る？", "高額療養費のしくみ"),
     "iryohi-kojo":     ("🧾", "出産した年は", "お金が戻ります", "医療費控除のしくみ"),
+    "nenshu-kabe":     ("🧱", "103万の壁は", "もうありません", "いまの壁は106・123・160万"),
 }
 
 
@@ -1310,6 +1418,50 @@ CAPTION_IRYOHIKOJO = """【出産した年は、確定申告でお金が戻り�
 #医療費控除 #確定申告 #出産費用 #プレママ #新米ママ #ワーママ #家計管理 #節約 #出産準備 #知って得する"""
 
 
+CAPTION_KABE = """【103万の壁、もうありません】
+
+📌 働き方を決める前に保存しておいてください。
+
+2025年(令和7年)の税制改正で、基礎控除が48万円から最大95万円に、
+給与所得控除の最低保障が55万円から65万円に引き上げられました。
+足すと160万円。ここまで所得税はかかりません。
+
+【いまの壁はこの4つ】
+▶ 106万円 … 社会保険に加入(条件つき)
+▶ 123万円 … 配偶者控除から配偶者特別控除に変わるだけ
+▶ 160万円 … 所得税がかかり、配偶者特別控除も減り始める
+▶ 201万5,999円 … 配偶者特別控除が終わる
+
+【本当の崖は社会保険です】
+年収105万円なら手取り105万円。
+106万円になると手取りは約90.1万円。
+1万円増やしただけで約149,000円下がります。
+元に戻るのは年収122万円あたりです。
+
+106万円の壁が効くのは、次をすべて満たす場合だけ。
+・勤務先の従業員が50人超
+・週20時間以上
+・月額賃金8.8万円以上
+・学生でない
+ひとつでも外れると、壁は130万円まで動きます。
+
+【よくある誤解】
+123万円を超えても手取りは減りません。
+配偶者控除から配偶者特別控除に切り替わるだけで、控除額は満額のまま。
+実際に減り始めるのは160万円からです。
+
+【106万の壁は消えていきます】
+月額賃金8.8万円という条件は2025年6月から3年以内に撤廃。
+勤務先の規模の条件も2027年10月に36人以上、2029年10月に21人以上、
+2032年10月に11人以上、2035年10月には10人以下まで下がります。
+
+自分の年収でどうなるかは、プロフィールのリンクからシミュレーターで動かせます。
+
+※出典 国税庁・厚生労働省。手取りは目安です。個別の税務相談には応じられません。
+
+#年収の壁 #103万の壁 #106万の壁 #扶養内 #パート #ワーママ #配偶者控除 #共働き #家計管理 #知って得する"""
+
+
 REELS = [
     # (名前, テーマ, 描画関数, キャプション, 状態)
     ("018support",      "mint",     render_018,        CAPTION_018,       "投稿済み"),
@@ -1325,6 +1477,7 @@ REELS = [
     ("kyushoku-2026",   "mint",     render_kyushoku,   CAPTION_KYUSHOKU,  "投稿済み"),
     ("kogaku-ryoyohi",  "coral",    render_kogaku,     CAPTION_KOGAKU,    "未投稿"),
     ("iryohi-kojo",     "lavender", render_iryohikojo, CAPTION_IRYOHIKOJO, "未投稿"),
+    ("nenshu-kabe",     "navy",     render_kabe,       CAPTION_KABE,      "未投稿"),
 ]
 
 
@@ -1385,6 +1538,7 @@ def write_index():
         "kyushoku-2026": "2026年4月からの給食費",
         "kogaku-ryoyohi": "帝王切開・切迫早産と高額療養費",
         "iryohi-kojo": "出産した年の医療費控除",
+        "nenshu-kabe": "年収の壁(103万はもうない)",
     }
     for i, (name, _t, _f, _c, status) in enumerate(REELS, 1):
         lines.append(f"| {i:02d} | `{i:02d}-{name}/` | {NOTE.get(name, '')} | {status} |")

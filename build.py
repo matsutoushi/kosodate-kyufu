@@ -45,6 +45,7 @@ NAV = [
     ("./shindan.html", "もらえる診断"),
     ("./ichiran.html", "金額の早見表"),
     ("./chiiki.html", "地域で調べる"),
+    ("./kabe.html", "年収の壁"),
     ("./kakei.html", "家計の見直し"),
 ]
 
@@ -213,6 +214,12 @@ def build_index(data):
     <p>制度はたくさんあるのに、案内は来ません。<br>あなたが受け取れるお金を、いっしょに確認しましょう。</p>
     <a class="cta" href="./shindan.html">▶ もらえるお金を30秒でしんだん</a>
   </div>
+
+  <a class="card" href="./kabe.html" style="background:linear-gradient(135deg,#f7f9fc,#fff6f0)">
+    <div class="t">🧱 「103万の壁」は、もうありません</div>
+    <div class="s">いくらまで働くと得か、スライダーで試算できます</div>
+    <div class="d">2025年の改正で壁が動きました。106万・123万・160万のどれに当たるかを確認 →</div>
+  </a>
 
   <a class="card" href="./chiiki.html" style="background:linear-gradient(135deg,#fff6f0,#f2faf8)">
     <div class="t">📍 あなたの街は何歳まで医療費が無料?</div>
@@ -1025,6 +1032,12 @@ def build_kabe():
     <li><a href="https://www.nta.go.jp/users/gensen/2025kiso/index.htm" target="_blank" rel="noopener">国税庁 令和7年度税制改正による所得税の基礎控除の見直し等について</a></li>
     <li><a href="https://www.mhlw.go.jp/stf/taiou_001_00002.html" target="_blank" rel="noopener">厚生労働省「年収の壁」への対応</a></li>
   </ul>
+
+  <div class="sec-title">もっとくわしく</div>
+  <a class="card" href="./nenshu-kabe.html">
+    <div class="t">📊 103万の壁はもうありません。いまの壁は106万・123万・160万</div>
+    <div class="d">なぜ壁が動いたのか、配偶者控除と配偶者特別控除の関係を、国税庁と厚生労働省の資料にもとづいて解説しています →</div>
+  </a>
 
   <a class="cta" href="./shindan.html" style="display:block;text-align:center">もらえる給付金も調べる →</a>
 </div>
