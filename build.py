@@ -1052,15 +1052,33 @@ def build_kabe():
             : h<=8500000 ? h*0.1+1100000 : 1950000;
     return Math.max(0, h-ded);
   }}
-  // 配偶者控除・配偶者特別控除は、控除を受ける側の合計所得が1,000万円超だと使えない。
-  // 900万円以下=38万、900万超950万以下=26万、950万超1,000万以下=13万。
-  function spouseDeduction(h){{
-    var a = partnerIncome(h);
-    if(a>10000000) return 0;
-    if(a>9500000) return 130000;
-    if(a>9000000) return 260000;
-    return 380000;
+  // 【国税庁 No.1195 の表(令和7年分以後)をそのまま持つ】控除は2つの軸で決まる。
+  //  ・配偶者控除か配偶者特別控除かの「区分」は、働く側の合計所得(58万円以下かどうか)で決まる
+  //  ・控除額は 働く側の所得=行 / 相手の所得=列 の組み合わせで決まる
+  //  相手の合計所得が1,000万円を超えると、どちらの控除も使えない。
+  var SPOUSE_TABLE = [
+    [ 950000, [380000,260000,130000]],
+    [1000000, [360000,240000,120000]],
+    [1050000, [310000,210000,110000]],
+    [1100000, [260000,180000, 90000]],
+    [1150000, [210000,140000, 70000]],
+    [1200000, [160000,110000, 60000]],
+    [1250000, [110000, 80000, 40000]],
+    [1300000, [ 60000, 40000, 20000]],
+    [1330000, [ 30000, 20000, 10000]]
+  ];
+  function spouseAllowance(wInc, h){{
+    var a = partnerIncome(wInc);        // 働く側の合計所得
+    var b = partnerIncome(h);           // 相手の合計所得
+    if(b>10000000) return {{amt:0, kind:'対象外'}};
+    var col = b>9500000 ? 2 : b>9000000 ? 1 : 0;
+    if(a<=580000) return {{amt:[380000,260000,130000][col], kind:'配偶者控除'}};
+    for(var i=0;i<SPOUSE_TABLE.length;i++){{
+      if(a<=SPOUSE_TABLE[i][0]) return {{amt:SPOUSE_TABLE[i][1][col], kind:'配偶者特別控除'}};
+    }}
+    return {{amt:0, kind:'控除なし'}};
   }}
+  function spouseDeduction(h){{ return spouseAllowance(0,h).amt; }}
   // 控除を失ったときの増税額は相手の税率で決まる(所得税+住民税10%の概算)
   function partnerRate(h){{
     var a = partnerIncome(h);
@@ -1068,15 +1086,9 @@ def build_kabe():
            : a<=9000000 ? 0.23 : a<=18000000 ? 0.33 : 0.40;
     return it + 0.10;
   }}
-  // 控除が実際に減り始めるのは123万円ではなく160万円から。
-  // 123万円を超えると「配偶者控除」から「配偶者特別控除」に切り替わるが、
-  // 控除額は満額のまま引き継がれるので、ここでは段差も傾きの変化も起きない。
-  var FULL_UNTIL = 1600000, ZERO_AT = 2015999;
+  // 満額からいくら減ったか。表が5万円刻みなので、グラフは階段状になる。
   function lostDeduction(inc, h){{
-    var d = spouseDeduction(h);
-    if(inc<=FULL_UNTIL) return 0;                       // 満額のまま
-    if(inc>=ZERO_AT) return d;                          // 控除ゼロ
-    return d*(inc-FULL_UNTIL)/(ZERO_AT-FULL_UNTIL);     // ここから段階的に減る
+    return spouseDeduction(h) - spouseAllowance(inc,h).amt;
   }}
   // 世帯の手取り(目安)。noTax=true なら所得税がなかった場合の比較線
   function net(inc, noTax){{
@@ -1165,16 +1177,18 @@ def build_kabe():
     // 控除の判定は「働く側の年収」と「相手の所得」の両方で決まる。
     // 相手の合計所得が1,000万円を超えると、配偶者控除も配偶者特別控除も使えない。
     function spouseStatus(inc, h){{
-      var d = spouseDeduction(h);
-      if(d===0) return ['対象外(配偶者の所得が1,000万円超)', false,
-        '配偶者の合計所得が1,000万円を超えているため、働く側の年収にかかわらず控除は受けられません。'];
-      var amt = (d===380000?'38万円':d===260000?'26万円':'13万円');
-      if(inc<=1230000) return ['配偶者控除 '+amt+' を受けられます', true,
-        '相手の所得区分に応じた満額です。'];
-      if(inc<=2015999) return ['配偶者特別控除に移りました(段階的に減少)', false,
-        '123万円を超えると配偶者控除は終わり、収入が増えるほど控除額が減っていきます。'];
-      return ['控除なし(201万5,999円を超えました)', false,
-        '配偶者特別控除もここで終わりです。'];
+      var r = spouseAllowance(inc,h), full = spouseDeduction(h);
+      var man = function(v){{return (v/10000)+'万円';}};
+      if(r.kind==='対象外') return ['控除なし(配偶者の所得が1,000万円超)', false,
+        '配偶者の合計所得が1,000万円を超えているため、働く側の年収にかかわらず受けられません。'];
+      if(r.kind==='控除なし') return ['控除なし(働く側の所得が133万円超)', false,
+        '給与だけなら年収201万5,999円を超えた状態です。配偶者特別控除もここで終わりです。'];
+      if(r.kind==='配偶者控除') return ['配偶者控除 '+man(r.amt), true,
+        '働く側の合計所得が58万円以下(給与なら123万円以下)なのでこちらです。'];
+      return ['配偶者特別控除 '+man(r.amt)+(r.amt<full?'（満額'+man(full)+'から減っています）':''),
+        r.amt>=full,
+        '123万円を超えると配偶者特別控除に切り替わります。控除額は満額のまま160万円まで続き、'
+        +'そこから5万円刻みで段階的に減っていきます。'];
     }}
     var sp = spouseStatus(inc, hInc);
     Q.innerHTML =
