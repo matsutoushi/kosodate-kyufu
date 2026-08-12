@@ -1116,21 +1116,34 @@ def build_kabe():
     var ins=insured(inc), rows=[];
     // スライダーのすぐ下に要点だけ出す(グラフまでスクロールしなくても分かるように)
     var ok=function(b,s){{return '<span style="color:'+(b?'#3F6F69':'#D14757')+'">'+s+'</span>';}};
-    var d=spouseDeduction(hInc);
+    // 控除の判定は「働く側の年収」と「相手の所得」の両方で決まる。
+    // 相手の合計所得が1,000万円を超えると、配偶者控除も配偶者特別控除も使えない。
+    function spouseStatus(inc, h){{
+      var d = spouseDeduction(h);
+      if(d===0) return ['対象外(配偶者の所得が1,000万円超)', false,
+        '配偶者の合計所得が1,000万円を超えているため、働く側の年収にかかわらず控除は受けられません。'];
+      var amt = (d===380000?'38万円':d===260000?'26万円':'13万円');
+      if(inc<=1230000) return ['配偶者控除 '+amt+' を受けられます', true,
+        '相手の所得区分に応じた満額です。'];
+      if(inc<=2015999) return ['配偶者特別控除に移りました(段階的に減少)', false,
+        '123万円を超えると配偶者控除は終わり、収入が増えるほど控除額が減っていきます。'];
+      return ['控除なし(201万5,999円を超えました)', false,
+        '配偶者特別控除もここで終わりです。'];
+    }}
+    var sp = spouseStatus(inc, hInc);
     Q.innerHTML =
       '手取りの目安 <span style="color:#F4643B;font-size:1.25rem">'+yen(net(inc))+'</span> 円<br>'
-      + ok(inc<=1230000, inc<=1230000?'✓ 配偶者控除に入れます':'✗ 配偶者控除から外れます')
-      + '　' + ok(!ins, ins?'✗ 社会保険に加入':'✓ 社会保険は扶養のまま')
-      + '　' + ok(inc<=1600000, inc<=1600000?'✓ 所得税なし':'✗ 所得税あり')
-      + (d===0 ? '<br><span style="color:#D14757;font-size:.85rem">'
-                 + '配偶者の所得が高いため、配偶者控除・配偶者特別控除は使えません</span>' : '');
-    rows.push(['配偶者控除(38万円)', inc<=1230000 ? '入れます' : '外れます', inc<=1230000]);
+      + ok(sp[1], (sp[1]?'✓ ':'✗ ')+sp[0])
+      + '<br>' + ok(!ins, ins?'✗ 社会保険に加入':'✓ 社会保険は扶養のまま')
+      + '　' + ok(inc<=1600000, inc<=1600000?'✓ 所得税なし':'✗ 所得税あり');
+    rows.push(['配偶者の控除', sp[0], sp[1], sp[2]]);
     rows.push(['本人の所得税', inc<=1600000 ? 'かかりません' : 'かかります', inc<=1600000]);
     rows.push(['社会保険', ins ? '自分で加入します' : '扶養のままです', !ins]);
     var h='<div class="sec-title">この年収だとどうなるか</div>';
     rows.forEach(function(r){{
       h+='<div class="card" style="cursor:default"><div class="t">'+r[0]+
-         '</div><div class="d" style="color:'+(r[2]?'#3F6F69':'#D14757')+';font-weight:700">'+r[1]+'</div></div>';
+         '</div><div class="d" style="color:'+(r[2]?'#3F6F69':'#D14757')+';font-weight:700">'+r[1]+'</div>'+
+         (r[3]?'<div class="d" style="margin-top:4px">'+r[3]+'</div>':'')+'</div>';
     }});
     h+='<div class="note">手取りの目安: <strong>'+yen(net(inc))+' 円</strong>'+
        (ins?'（社会保険料の負担が発生しています）':'')+'</div>';
