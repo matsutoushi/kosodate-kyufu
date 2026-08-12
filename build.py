@@ -985,10 +985,10 @@ def build_kabe():
 
   <div class="sec-title">いまの壁の一覧</div>
   <ul class="tips">
-    <li><strong>123万円</strong> … これを超えると配偶者控除(38万円)から外れます。<span style="color:#6B6B76">合計所得58万円以下という要件を給与収入に直したライン</span></li>
+    <li><strong>123万円</strong> … 「配偶者控除」から「配偶者特別控除」に切り替わります。<strong>ただし控除額は満額のまま引き継がれるので、ここで手取りが減ることはありません</strong></li>
+    <li><strong>160万円</strong> … 本人に所得税がかかり始め、<strong>配偶者特別控除もここから段階的に減り始めます</strong>。実質的な分かれ目はこちら</li>
     <li><strong>130万円</strong> … 社会保険の扶養から外れます(従業員50人以下の勤務先などの場合)</li>
     <li><strong>106万円</strong> … 従業員50人超・週20時間以上・月額8.8万円以上・学生でない、をすべて満たすと社会保険に加入します</li>
-    <li><strong>160万円</strong> … ここまでは本人に所得税がかかりません(基礎控除95万＋給与所得控除65万)</li>
     <li><strong>201万5,999円</strong> … 配偶者特別控除もここで終わります</li>
   </ul>
 
@@ -1068,21 +1068,23 @@ def build_kabe():
            : a<=9000000 ? 0.23 : a<=18000000 ? 0.33 : 0.40;
     return it + 0.10;
   }}
-  // 世帯の手取り(目安)
-  function net(inc){{
+  // 控除が実際に減り始めるのは123万円ではなく160万円から。
+  // 123万円を超えると「配偶者控除」から「配偶者特別控除」に切り替わるが、
+  // 控除額は満額のまま引き継がれるので、ここでは段差も傾きの変化も起きない。
+  var FULL_UNTIL = 1600000, ZERO_AT = 2015999;
+  function lostDeduction(inc, h){{
+    var d = spouseDeduction(h);
+    if(inc<=FULL_UNTIL) return 0;                       // 満額のまま
+    if(inc>=ZERO_AT) return d;                          // 控除ゼロ
+    return d*(inc-FULL_UNTIL)/(ZERO_AT-FULL_UNTIL);     // ここから段階的に減る
+  }}
+  // 世帯の手取り(目安)。noTax=true なら所得税がなかった場合の比較線
+  function net(inc, noTax){{
     var h = +HS.value;
     var ins = insured(inc) ? inc*0.15 : 0;              // 社会保険料 約15%
     var taxable = Math.max(0, inc - 650000 - 950000);   // 給与所得控除65万 + 基礎控除95万
-    var itax = taxable*0.05;                            // 所得税(概算5%)
-    var lost = 0;
-    var d = spouseDeduction(h);
-    if(inc>1230000 && inc<=2015999) {{
-      // 配偶者特別控除へ移行。収入が増えるほど段階的に減る(直線で近似)
-      lost = d * (inc-1230000)/(2015999-1230000);
-    }} else if(inc>2015999) {{
-      lost = d;                                        // 控除が完全になくなる
-    }}
-    return inc - ins - itax - lost*partnerRate(h);
+    var itax = noTax ? 0 : taxable*0.05;                // 所得税(概算5%)
+    return inc - ins - itax - lostDeduction(inc,h)*partnerRate(h);
   }}
 
   function draw(cur){{
@@ -1125,10 +1127,23 @@ def build_kabe():
     }});
     ctx.textAlign='left';
 
+    // 比較線: 所得税がなかった場合(160万円から実線と離れていくのが所得税の影響)
+    ctx.strokeStyle='#9AA7B4'; ctx.lineWidth=2; ctx.setLineDash([6,5]); ctx.beginPath();
+    for(var x2=0;x2<=max;x2+=5000){{
+      var v2=net(x2,true);
+      x2?ctx.lineTo(sx(x2),sy(v2)):ctx.moveTo(sx(x2),sy(v2));
+    }}
+    ctx.stroke(); ctx.setLineDash([]);
     // 手取りの線
     ctx.strokeStyle='#FF8A65'; ctx.lineWidth=3; ctx.beginPath();
     ny.forEach(function(p,i){{ i?ctx.lineTo(sx(p[0]),sy(p[1])):ctx.moveTo(sx(p[0]),sy(p[1])); }});
     ctx.stroke();
+    // 凡例
+    ctx.font='11px sans-serif';
+    ctx.fillStyle='#FF8A65'; ctx.fillRect(W-190,Hh-PB+8,14,3);
+    ctx.fillStyle='#6B6B76'; ctx.fillText('実際の手取り', W-170, Hh-PB+12);
+    ctx.fillStyle='#9AA7B4'; ctx.fillRect(W-92,Hh-PB+8,14,3);
+    ctx.fillStyle='#6B6B76'; ctx.fillText('所得税なしの場合', W-72, Hh-PB+12);
     // 現在地
     ctx.strokeStyle='#F4643B'; ctx.setLineDash([3,3]); ctx.lineWidth=1; ctx.beginPath();
     ctx.moveTo(sx(cur),PT); ctx.lineTo(sx(cur),Hh-PB); ctx.stroke(); ctx.setLineDash([]);
