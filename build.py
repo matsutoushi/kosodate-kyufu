@@ -933,6 +933,167 @@ def build_policy():
     return "".join(parts)
 
 
+def build_kabe():
+    """「年収の壁」試算ツール。スライダーを動かすと世帯の手取りが追従する。
+    しきい値は国税庁・厚労省の一次情報から取った確定値のみを使う(下のTHRESHOLDS)。
+    社会保険料率と税率は概算なので、画面上で「目安」と明示すること。"""
+    parts = [head(f"年収の壁シミュレーター｜{SITE_NAME}",
+                  "妻(配偶者)の年収をスライダーで動かすと、世帯の手取りがどう変わるかがその場で分かります。"
+                  "123万・130万・160万の壁を国税庁と厚生労働省の資料にもとづいて整理しました。",
+                  "/kabe.html")]
+    parts.append(f"""
+<header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
+<div class="wrap body">
+  <a class="back" href="./index.html">← ホーム</a>
+  <h1 style="font-size:1.35rem;margin:.2em 0">年収の壁シミュレーター</h1>
+  <p>2025年(令和7年)の税制改正で「103万円の壁」はなくなりました。いまの壁がどこにあるのか、
+  スライダーを動かして確かめてください。<strong>世帯の手取り</strong>がその場で計算されます。</p>
+
+  <div class="card" style="cursor:default">
+    <label style="display:block;font-weight:700;margin-bottom:6px">パートで働く方の年収
+      <span id="kIncome" style="color:#F4643B;font-size:1.3rem">1,000,000</span> 円</label>
+    <input id="kSlider" type="range" min="0" max="2500000" step="10000" value="1000000"
+           style="width:100%;accent-color:#FF8A65;height:28px">
+    <div style="display:flex;justify-content:space-between;font-size:.75rem;color:#6B6B76">
+      <span>0円</span><span>250万円</span></div>
+
+    <div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;font-size:.9rem">
+      <label><input type="checkbox" id="kBig" checked> 勤務先の従業員が50人超</label>
+      <label><input type="checkbox" id="kHours" checked> 週20時間以上働く</label>
+      <label><input type="checkbox" id="kStudent"> 学生である</label>
+    </div>
+  </div>
+
+  <canvas id="kChart" width="720" height="380"
+          style="width:100%;height:auto;background:#FFFDF9;border-radius:12px;margin:10px 0"></canvas>
+
+  <div id="kVerdict"></div>
+
+  <div class="sec-title">いまの壁の一覧</div>
+  <ul class="tips">
+    <li><strong>123万円</strong> … これを超えると配偶者控除(38万円)から外れます。<span style="color:#6B6B76">合計所得58万円以下という要件を給与収入に直したライン</span></li>
+    <li><strong>130万円</strong> … 社会保険の扶養から外れます(従業員50人以下の勤務先などの場合)</li>
+    <li><strong>106万円</strong> … 従業員50人超・週20時間以上・月額8.8万円以上・学生でない、をすべて満たすと社会保険に加入します</li>
+    <li><strong>160万円</strong> … ここまでは本人に所得税がかかりません(基礎控除95万＋給与所得控除65万)</li>
+    <li><strong>201万5,999円</strong> … 配偶者特別控除もここで終わります</li>
+  </ul>
+
+  <div class="note">📌 <strong>103万円の壁は、もうありません。</strong>
+  基礎控除が48万円から最大95万円に、給与所得控除の最低保障が55万円から65万円に引き上げられたためです。
+  扶養に入れるかどうかの線は123万円に移りました。</div>
+
+  <div class="sec-title">106万円の壁は、これから消えていきます</div>
+  <p>社会保険の加入要件のうち<strong>月額賃金8.8万円以上という条件は、2025年6月から3年以内に撤廃</strong>されることが決まっています。
+  勤務先の規模の条件も段階的に下がります。</p>
+  <ul class="tips">
+    <li>2027年10月 … 従業員36人以上</li>
+    <li>2029年10月 … 従業員21人以上</li>
+    <li>2032年10月 … 従業員11人以上</li>
+    <li>2035年10月 … 従業員10人以下も対象に</li>
+  </ul>
+  <div class="note">📌 つまり将来的には、106万円の壁は「週20時間以上働くかどうか」だけで決まるようになります。
+  いま50人以下の職場で働いている方も、いずれ対象になります。</div>
+
+  <div class="sec-title">この試算の前提</div>
+  <ul class="mis">
+    <li>手取りの計算は<strong>目安</strong>です。社会保険料は収入の約15%、所得税は5%、住民税は10%として概算しています</li>
+    <li>実際の保険料は加入する健康保険や住んでいる地域で変わります</li>
+    <li>住民税は年収100万円前後から自治体ごとの基準でかかり始めます(この試算には含めていません)</li>
+    <li>配偶者特別控除は配偶者の収入に応じて段階的に減りますが、ここでは簡略化しています</li>
+    <li>勤務先の家族手当・扶養手当が年収で決まる場合は、別途その影響があります</li>
+  </ul>
+
+  <div class="note">この試算は一般的な制度の説明であり、個別の税務相談ではありません。
+  正確な金額は勤務先・お住まいの市区町村・税務署にご確認ください。</div>
+
+  <div class="sec-title">出典</div>
+  <ul class="tips">
+    <li><a href="https://www.nta.go.jp/users/gensen/2025kiso/index.htm" target="_blank" rel="noopener">国税庁 令和7年度税制改正による所得税の基礎控除の見直し等について</a></li>
+    <li><a href="https://www.mhlw.go.jp/stf/taiou_001_00002.html" target="_blank" rel="noopener">厚生労働省「年収の壁」への対応</a></li>
+  </ul>
+
+  <a class="cta" href="./shindan.html" style="display:block;text-align:center">もらえる給付金も調べる →</a>
+</div>
+<script>
+(function(){{
+  var S=document.getElementById('kSlider'), L=document.getElementById('kIncome'),
+      V=document.getElementById('kVerdict'), C=document.getElementById('kChart'),
+      B=document.getElementById('kBig'), H=document.getElementById('kHours'),
+      ST=document.getElementById('kStudent');
+  var yen=function(n){{return Math.round(n).toLocaleString('ja-JP');}};
+
+  // 社会保険に入るかどうか(厚労省の要件)
+  function insured(inc){{
+    if(ST.checked) return false;                        // 学生は対象外
+    if(B.checked && H.checked && inc>=1060000) return true;  // 106万の壁
+    return inc>=1300000;                                // 130万の壁(扶養から外れる)
+  }}
+  // 世帯の手取り(目安)。妻の収入から本人の負担を引き、夫側の控除減も反映する
+  function net(inc){{
+    var ins = insured(inc) ? inc*0.15 : 0;              // 社会保険料 約15%
+    var taxable = Math.max(0, inc - 650000 - 950000);   // 給与所得控除65万 + 基礎控除95万
+    var itax = taxable*0.05;                            // 所得税(概算5%)
+    var husband = 0;
+    if(inc>1230000) husband += 380000*0.15;             // 配偶者控除38万を失う分の夫の増税(概算)
+    if(inc>2015999) husband += 0;
+    return inc - ins - itax - husband;
+  }}
+
+  function draw(cur){{
+    var ctx=C.getContext('2d'), W=C.width, Hh=C.height, P=44;
+    ctx.clearRect(0,0,W,Hh);
+    var max=2500000, ny=[], mx=0;
+    for(var x=0;x<=max;x+=10000){{ var v=net(x); ny.push([x,v]); if(v>mx) mx=v; }}
+    var sx=function(x){{return P+(W-P*1.4)*x/max;}}, sy=function(v){{return Hh-P-(Hh-P*1.8)*v/mx;}};
+    // 壁の縦線
+    var walls=[[1060000,'106万'],[1230000,'123万'],[1300000,'130万'],[1600000,'160万']];
+    ctx.font='11px sans-serif';
+    walls.forEach(function(w){{
+      ctx.strokeStyle='#E7E0DA'; ctx.setLineDash([4,4]); ctx.beginPath();
+      ctx.moveTo(sx(w[0]),P*0.6); ctx.lineTo(sx(w[0]),Hh-P); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle='#8A8A94'; ctx.fillText(w[1], sx(w[0])-14, P*0.5);
+    }});
+    // 手取りの線
+    ctx.strokeStyle='#FF8A65'; ctx.lineWidth=3; ctx.beginPath();
+    ny.forEach(function(p,i){{ i?ctx.lineTo(sx(p[0]),sy(p[1])):ctx.moveTo(sx(p[0]),sy(p[1])); }});
+    ctx.stroke();
+    // 現在地
+    ctx.fillStyle='#F4643B'; ctx.beginPath();
+    ctx.arc(sx(cur),sy(net(cur)),7,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#2B2B33'; ctx.font='bold 13px sans-serif';
+    ctx.fillText('世帯の手取り(目安)', P, P*0.5);
+  }}
+
+  function update(){{
+    var inc=+S.value; L.textContent=yen(inc);
+    var ins=insured(inc), rows=[];
+    rows.push(['配偶者控除(38万円)', inc<=1230000 ? '入れます' : '外れます', inc<=1230000]);
+    rows.push(['本人の所得税', inc<=1600000 ? 'かかりません' : 'かかります', inc<=1600000]);
+    rows.push(['社会保険', ins ? '自分で加入します' : '扶養のままです', !ins]);
+    var h='<div class="sec-title">この年収だとどうなるか</div>';
+    rows.forEach(function(r){{
+      h+='<div class="card" style="cursor:default"><div class="t">'+r[0]+
+         '</div><div class="d" style="color:'+(r[2]?'#3F6F69':'#D14757')+';font-weight:700">'+r[1]+'</div></div>';
+    }});
+    h+='<div class="note">手取りの目安: <strong>'+yen(net(inc))+' 円</strong>'+
+       (ins?'（社会保険料の負担が発生しています）':'')+'</div>';
+    // 働き損の区間を知らせる
+    var best=net(inc), warn=0;
+    for(var x=inc+10000;x<=inc+400000;x+=10000){{ if(net(x)<best){{ warn=x; break; }} }}
+    if(warn) h+='<div class="note">📌 ここから少し増やすと、手取りが下がる区間に入ります。'+
+       '増やすなら一気に超えたほうが有利です。</div>';
+    V.innerHTML=h; draw(inc);
+  }}
+  S.addEventListener('input',update);
+  [B,H,ST].forEach(function(e){{e.addEventListener('change',update);}});
+  update();
+}})();
+</script>""")
+    parts.append(footer())
+    return "".join(parts)
+
+
 def build_article(a, articles=()):
     """解説記事ページ。制度でも比較でもない読み物を汎用に描く。
     data/articles.json に足すだけでページが増える(将来の税金まわりもここに置く)。"""
@@ -1100,6 +1261,10 @@ def main():
                 f.write(build_hikaku(pg, hk["pages"]))
         print(f"  比較ページ: {len(hk['pages'])}本")
 
+    with open(os.path.join(SITE, "kabe.html"), "w", encoding="utf-8") as f:
+        f.write(build_kabe())
+    print("  年収の壁シミュレーター: kabe.html")
+
     for a in arts:
         with open(os.path.join(SITE, a["id"] + ".html"), "w", encoding="utf-8") as f:
             f.write(build_article(a, arts))
@@ -1176,6 +1341,7 @@ def main():
     pages += [f"/{x}.html" for x in (data.get("_city_extra") or [])]
     pages += [f"/{p['id']}.html" for p in data["programs"]]
     pages += [f"/{a['id']}.html" for a in (data.get("_articles") or [])]
+    pages += ["/kabe.html"]
     if os.path.exists(hikaku_path):
         pages += [f"/{pg['id']}.html" for pg in json.load(open(hikaku_path, encoding="utf-8"))["pages"]]
     today = data.get("updated", "")

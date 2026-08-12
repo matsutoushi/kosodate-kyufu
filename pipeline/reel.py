@@ -818,6 +818,216 @@ def render_kigen(T):
     return frame, 15.8
 
 
+def render_kogaku(T):
+    """K案: 高額療養費。帝王切開・切迫早産で実際に効く。
+    これまでの「フック→箇条書き→CTA」だと中身が薄いので、
+    前提 → 計算式 → モデルケース → 手続き → 落とし穴 の7シーン構成にした。約30秒。"""
+    em = emoji_layer("🏥", 200)
+    hook = text_layer("帝王切開になったら\n入院費はいくら？", font(84), T["ink"])
+
+    s2a = text_layer("まず大前提", font(56), T["sub"])
+    b_no = bar_layer("正常分娩", "保険がきかない＝高額療養費の対象外", T)
+    b_yes = bar_layer("帝王切開・切迫早産・吸引分娩", "保険診療なので 高額療養費が使えます", T)
+    s2b = text_layer("「出産は対象外」と思い込む人がとても多い", font(48), T["ink"])
+
+    s3a = text_layer("1か月の自己負担には上限があります", font(56), T["sub"])
+    s3b = text_layer("80,100円 ＋（医療費−267,000円）×1%", font(56), T["brand_d"])
+    s3c = text_layer("年収およそ370〜770万円の場合", font(46), T["sub"])
+    s3d = text_layer("超えた分は、あとから戻ってきます", font(52), T["ink"])
+
+    s4a = text_layer("たとえば、切迫早産で1か月入院", font(56), T["sub"])
+    st1 = bar_layer("医療費の総額", "100万円", T)
+    st2 = bar_layer("窓口で払う3割", "30万円", T)
+    st3 = bar_layer("この月の上限額", "約 87,430円", T)
+    s4b = text_layer("戻ってくるのは", font(54), T["sub"])
+    cf = font(150)
+
+    s5a = text_layer("しかも、立て替えずに済みます", font(56), T["sub"])
+    b_m1 = bar_layer("マイナ保険証を使う", "窓口の支払いが最初から上限まで", T)
+    b_m2 = bar_layer("限度額適用認定証を用意する", "入院が決まったら健康保険へ申請", T)
+
+    s6a = text_layer("見落としやすい3つ", font(58), T["sub"])
+    b_w1 = bar_layer("計算は「月ごと」", "月をまたぐ入院は合算されません", T)
+    b_w2 = bar_layer("時効は2年", "診療した月の翌月1日から2年", T)
+    b_w3 = bar_layer("出産育児一時金とは別", "50万円とは別に受け取れます", T)
+
+    c = cta_save(T, "入院が決まったときのために", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+
+        if t < 3.0:                                    # ① フック
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1000, dy=int((1 - p) * 55))
+        elif t < 9.0:                                  # ② 何が対象か
+            tt = t - 3.0
+            paste_center(img, s2a, 440, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                q = ease_out(min(1, (tt - 0.4) / 0.4))
+                paste_at(img, b_no, 90, 700, alpha=q, dx=int((1 - q) * -70))
+            if tt > 1.5:
+                q = ease_out(min(1, (tt - 1.5) / 0.4))
+                paste_at(img, b_yes, 90, 910, alpha=q, dx=int((1 - q) * -70))
+            if tt > 2.8:
+                paste_center(img, s2b, 1180, alpha=ease_out(min(1, (tt - 2.8) / 0.5)))
+        elif t < 15.0:                                 # ③ 上限額の考え方
+            tt = t - 9.0
+            paste_center(img, s3a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.5:
+                p = min(1, (tt - 0.5) / 0.35)
+                sc = 1.25 - 0.25 * ease_out(p)
+                z = s3b.resize((int(s3b.width * sc), int(s3b.height * sc)))
+                paste_center(img, z, 800, alpha=p)
+            if tt > 1.2:
+                paste_center(img, s3c, 950, alpha=ease_out(min(1, (tt - 1.2) / 0.4)))
+            if tt > 2.2:
+                paste_center(img, s3d, 1180, alpha=ease_out(min(1, (tt - 2.2) / 0.5)))
+        elif t < 24.0:                                 # ④ モデルケース
+            tt = t - 15.0
+            paste_center(img, s4a, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([st1, st2, st3]):
+                st = 0.4 + i * 1.1
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 660 + i * 200, alpha=q, dx=int((1 - q) * -70))
+            if tt > 4.0:
+                paste_center(img, s4b, 1250, alpha=ease_out(min(1, (tt - 4.0) / 0.4)))
+                cp = ease_out(min(1, max(0.0, (tt - 4.4) / 2.0)))
+                txt = f"{int(212570 * cp):,} 円"
+                tw = d.textlength(txt, font=cf)
+                d.text(((W - tw) / 2, 1310), txt, font=cf, fill=T["brand_d"])
+        elif t < 30.0:                                 # ⑤ 立て替えない方法
+            tt = t - 24.0
+            paste_center(img, s5a, 500, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                q = ease_out(min(1, (tt - 0.4) / 0.4))
+                paste_at(img, b_m1, 90, 760, alpha=q, dx=int((1 - q) * -70))
+            if tt > 1.6:
+                q = ease_out(min(1, (tt - 1.6) / 0.4))
+                paste_at(img, b_m2, 90, 970, alpha=q, dx=int((1 - q) * -70))
+        elif t < 36.0:                                 # ⑥ 落とし穴
+            tt = t - 30.0
+            paste_center(img, s6a, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([b_w1, b_w2, b_w3]):
+                st = 0.4 + i * 1.15
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 680 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        else:                                          # ⑦ CTA
+            draw_cta(img, c, t - 36.0)
+        return img
+
+    return frame, 41.0
+
+
+def render_iryohikojo(T):
+    """L案: 医療費控除。出産した年は該当しやすい。確定申告シーズンに向けた仕込み。約30秒。"""
+    em = emoji_layer("🧾", 200)
+    hook = text_layer("出産した年は\n確定申告でお金が戻ります", font(78), T["ink"])
+
+    s2 = text_layer("何が対象になるのか", font(56), T["sub"])
+    b_ok1 = bar_layer("対象になるもの", "妊婦健診・分娩費・入院費", T)
+    b_ok2 = bar_layer("意外と入れ忘れるもの", "通院の電車・バス代(記録があれば)", T)
+    b_ng = bar_layer("対象にならないもの", "里帰りの帰省費用・自家用車のガソリン代", T)
+
+    s3a = text_layer("いくらから使えるか", font(56), T["sub"])
+    s3b = text_layer("年間 10 万円を超えた分", font(80), T["brand_d"])
+    s3c = text_layer("総所得200万円未満なら 所得の5%", font(48), T["sub"])
+    s3d = text_layer("生計が同じ家族の分は合算できます", font(52), T["ink"])
+
+    s4 = text_layer("たとえば、こんな1年", font(56), T["sub"])
+    m1 = bar_layer("出産費用 62万円", "出産育児一時金50万円を引いて 12万円", T)
+    m2 = bar_layer("妊婦健診の自己負担", "3万円", T)
+    m3 = bar_layer("家族の医療費", "5万円", T)
+    s4b = text_layer("合計20万円 → 戻るのは", font(52), T["sub"])
+    cf = font(140)
+
+    s5 = text_layer("つまずきやすい2つ", font(58), T["sub"])
+    w1 = bar_layer("年末調整ではできません", "会社員でも確定申告が必要です", T)
+    w2 = bar_layer("一時金の引き方に注意", "その出産の費用からだけ引く。全体から引かない", T)
+
+    s6 = text_layer("あきらめなくて大丈夫", font(58), T["sub"])
+    g1 = bar_layer("5年さかのぼれます", "去年の分を忘れていても間に合います", T)
+    g2 = bar_layer("共働きなら所得が高い方で", "税率が高いほど戻る額も大きくなります", T)
+
+    c = cta_save(T, "確定申告の時期に見返せるように", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 3.0:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1010, dy=int((1 - p) * 55))
+        elif t < 9.6:
+            tt = t - 3.0
+            paste_center(img, s2, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([b_ok1, b_ok2, b_ng]):
+                st = 0.4 + i * 1.25
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 680 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 15.6:
+            tt = t - 9.6
+            paste_center(img, s3a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.3 - 0.3 * ease_out(pp)
+                z = s3b.resize((int(s3b.width * sc), int(s3b.height * sc)))
+                paste_center(img, z, 790, alpha=pp)
+            if tt > 1.2:
+                paste_center(img, s3c, 960, alpha=ease_out(min(1, (tt - 1.2) / 0.4)))
+            if tt > 2.2:
+                paste_center(img, s3d, 1190, alpha=ease_out(min(1, (tt - 2.2) / 0.5)))
+        elif t < 24.6:
+            tt = t - 15.6
+            paste_center(img, s4, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([m1, m2, m3]):
+                st = 0.4 + i * 1.1
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 660 + i * 200, alpha=q, dx=int((1 - q) * -70))
+            if tt > 4.0:
+                paste_center(img, s4b, 1250, alpha=ease_out(min(1, (tt - 4.0) / 0.4)))
+                cp = ease_out(min(1, max(0.0, (tt - 4.4) / 2.0)))
+                txt = f"約 {int(20000 * cp):,} 円"
+                tw = d.textlength(txt, font=cf)
+                d.text(((W - tw) / 2, 1320), txt, font=cf, fill=T["brand_d"])
+        elif t < 30.6:
+            tt = t - 24.6
+            paste_center(img, s5, 480, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([w1, w2]):
+                st = 0.4 + i * 1.3
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 750 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 36.6:
+            tt = t - 30.6
+            paste_center(img, s6, 480, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([g1, g2]):
+                st = 0.4 + i * 1.3
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 750 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        else:
+            draw_cta(img, c, t - 36.6)
+        return img
+
+    return frame, 41.6
+
+
 # --- カバー画像 -------------------------------------------------------------
 # リールは全要素がフェードインするので1フレーム目がほぼ空白。Instagramに自動選択
 # させるとプロフィールが白紙で並ぶため、カバーは必ず別途アップロードする。
@@ -856,6 +1066,8 @@ COVERS = {
     "ikuji-10wari":    ("👶", "育休の手取りが", "10割になる条件", "2025年4月からの上乗せ"),
     "koko-sagaku":     ("🎓", "高校無償化", "住む県で差が出る", "大阪は年63万円超まで"),
     "kyushoku-2026":   ("🍚", "2026年4月から", "給食費が変わる", "月5,200円・手続き不要"),
+    "kogaku-ryoyohi":  ("🏥", "帝王切開の入院費", "いくら戻る？", "高額療養費のしくみ"),
+    "iryohi-kojo":     ("🧾", "出産した年は", "お金が戻ります", "医療費控除のしくみ"),
 }
 
 
@@ -1025,6 +1237,79 @@ CAPTION_KYUSHOKU = """【2026年4月から、給食費が変わります】
 #給食費 #給食費無償化 #小学生ママ #教育費 #子育て #新1年生 #家計管理 #節約 #給付金 #知って得する"""
 
 
+CAPTION_KOGAKU = """【帝王切開になったとき、入院費はいくら戻るか】
+
+📌 入院が決まってからでは調べる余裕がありません。保存推奨です。
+
+まず大前提から。
+
+▶ 正常分娩 … 保険がきかないので高額療養費の対象外
+▶ 帝王切開・切迫早産・吸引分娩 … 保険診療なので対象になります
+
+「出産は対象外」と思い込んで申請していない人がとても多い制度です。
+
+【1か月の自己負担の上限】
+年収およそ370〜770万円なら
+80,100円 ＋（医療費 − 267,000円）× 1%
+
+【たとえば、切迫早産で1か月入院した場合】
+▶ 医療費の総額 100万円
+▶ 窓口で払う3割 30万円
+▶ この月の上限額 約87,430円
+→ 戻ってくるのは 約21万円
+
+しかも、立て替えずに済ませる方法があります。
+
+▶ マイナ保険証を使う … 窓口の支払いが最初から上限まで
+▶ 限度額適用認定証を用意する … 入院が決まったら健康保険へ申請
+
+【見落としやすい3つ】
+▶ 計算は「月ごと」。月をまたぐ入院は合算されません
+▶ 時効は2年（診療した月の翌月1日から）
+▶ 出産育児一時金50万円とは別に受け取れます
+
+※上限額は年齢と所得で変わります。詳しくは加入している健康保険にご確認ください。
+
+#高額療養費 #帝王切開 #切迫早産 #出産準備 #プレママ #入院費 #医療費 #新米ママ #妊娠中 #知って得する"""
+
+
+CAPTION_IRYOHIKOJO = """【出産した年は、確定申告でお金が戻ります】
+
+📌 確定申告の時期に見返せるよう保存しておいてください。
+
+医療費控除は、1年間(1〜12月)の医療費が10万円を超えたときに使えます。
+出産した年は超えやすいので、該当する家庭が多い制度です。
+
+【対象になるもの】
+▶ 妊婦健診・分娩費・入院費
+▶ 通院の電車・バス代(記録があれば)
+
+【対象にならないもの】
+▶ 里帰りの帰省費用
+▶ 自家用車のガソリン代・駐車場代
+
+【たとえば、こんな1年】
+▶ 出産費用62万円 − 出産育児一時金50万円 = 12万円
+▶ 妊婦健診の自己負担 3万円
+▶ 家族の医療費 5万円
+合計20万円 → 10万円を超えた分が控除対象
+所得税率10%なら、住民税と合わせて約2万円が戻る計算です。
+
+【つまずきやすい2つ】
+▶ 年末調整ではできません。会社員でも確定申告が必要です
+▶ 出産育児一時金は「その出産にかかった費用」からだけ引きます。医療費の合計から引くと、控除額を少なく計算してしまいます
+
+【あきらめなくて大丈夫】
+▶ 5年さかのぼって申告できます
+▶ 共働きなら、所得が高い方で申告したほうが戻りが大きくなります
+
+領収書は年初から家族全員分を1つの封筒にまとめておくのがいちばん楽です。
+
+※詳しくは国税庁のページでご確認ください。個別の税務相談には応じられません。
+
+#医療費控除 #確定申告 #出産費用 #プレママ #新米ママ #ワーママ #家計管理 #節約 #出産準備 #知って得する"""
+
+
 REELS = [
     # (名前, テーマ, 描画関数, キャプション, 状態)
     ("018support",      "mint",     render_018,        CAPTION_018,       "投稿済み"),
@@ -1034,11 +1319,43 @@ REELS = [
     ("iryohi-22sai",    "coral",    render_iryohi22,   CAPTION_IRYOHI22,  "投稿済み"),
     ("tokyo23-shussan", "mint",     render_tokyo23,    CAPTION_TOKYO23,   "投稿済み"),
     ("shussan-okane",   "peach",    render_shussan,    CAPTION_SHUSSAN,   "投稿済み"),
-    ("kigen-list",      "lavender", render_kigen,      CAPTION_KIGEN,     "未投稿"),
-    ("ikuji-10wari",    "peach",    render_ikuji10,    CAPTION_IKUJI10,   "未投稿"),
-    ("koko-sagaku",     "navy",     render_kokosagaku, CAPTION_KOKO,      "未投稿"),
-    ("kyushoku-2026",   "mint",     render_kyushoku,   CAPTION_KYUSHOKU,  "未投稿"),
+    ("kigen-list",      "lavender", render_kigen,      CAPTION_KIGEN,     "投稿済み"),
+    ("ikuji-10wari",    "peach",    render_ikuji10,    CAPTION_IKUJI10,   "投稿済み"),
+    ("koko-sagaku",     "navy",     render_kokosagaku, CAPTION_KOKO,      "投稿済み"),
+    ("kyushoku-2026",   "mint",     render_kyushoku,   CAPTION_KYUSHOKU,  "投稿済み"),
+    ("kogaku-ryoyohi",  "coral",    render_kogaku,     CAPTION_KOGAKU,    "未投稿"),
+    ("iryohi-kojo",     "lavender", render_iryohikojo, CAPTION_IRYOHIKOJO, "未投稿"),
 ]
+
+
+# 冒頭で動きが止まると「画像だ」と判断されてスワイプされる。
+# 個々のシーンの秒数を書き換えるとバグを入れやすいので、
+# ①全体を一定倍速にする ②常に進むプログレスバーを重ねる の2点を
+# ラッパーで一括して効かせる。
+SPEED = 1.35        # 15秒台 → 11秒台。リストの送りも同じ比率で速くなる
+BAR_H = 22
+
+
+def polish(frame_fn, dur, T):
+    """再生速度を上げ、上端に進行バーを重ねる。返り値は (関数, 新しい尺)。"""
+    new_dur = dur / SPEED
+
+    def f(t):
+        img = frame_fn(min(t * SPEED, dur - 1e-3))
+        # 全編をゆっくり寄る(Ken Burns)。シーンが切り替わらない間も画が動き続けるので
+        # 「静止画では?」と思われてスワイプされるのを防ぐ。
+        prog = min(1.0, t / new_dur)
+        s = 1.0 + 0.045 * prog
+        cw, ch = int(W / s), int(H / s)
+        img = img.crop(((W - cw) // 2, (H - ch) // 2,
+                        (W - cw) // 2 + cw, (H - ch) // 2 + ch)).resize((W, H), Image.BILINEAR)
+        # 進行バーはズームの外側に描く(端が切れないように)
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, BAR_H], fill=T["tint"])
+        d.rectangle([0, 0, int(W * prog), BAR_H], fill=T["brand_d"])
+        return img
+
+    return f, new_dur
 
 
 def slot(i, name):
@@ -1066,6 +1383,8 @@ def write_index():
         "ikuji-10wari": "育休の手取りが10割になる条件",
         "koko-sagaku": "高校無償化の都道府県差",
         "kyushoku-2026": "2026年4月からの給食費",
+        "kogaku-ryoyohi": "帝王切開・切迫早産と高額療養費",
+        "iryohi-kojo": "出産した年の医療費控除",
     }
     for i, (name, _t, _f, _c, status) in enumerate(REELS, 1):
         lines.append(f"| {i:02d} | `{i:02d}-{name}/` | {NOTE.get(name, '')} | {status} |")
@@ -1082,12 +1401,12 @@ def main():
         if only and name not in only:
             continue
         d = slot(i, name)
-        frame_fn, dur = fn(THEMES[theme])
+        frame_fn, dur = polish(*fn(THEMES[theme]), T=THEMES[theme])
         out, n = encode(frame_fn, dur, d, cap)
         size = os.path.getsize(out) / 1024
         if name in COVERS:
             build_cover(THEMES[theme], *COVERS[name]).save(os.path.join(d, "cover.png"))
-        print(f"  {i:02d}-{name}/ [{theme}]: {dur}秒 / {n}フレーム / {size:.0f}KB (+cover)")
+        print(f"  {i:02d}-{name}/ [{theme}]: {dur:.1f}秒 / {n}フレーム / {size:.0f}KB (+cover)")
     write_index()
     print(f"\n→ {OUT}")
 
