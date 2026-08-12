@@ -958,11 +958,24 @@ def build_kabe():
     <div style="display:flex;justify-content:space-between;font-size:.75rem;color:#6B6B76">
       <span>0円</span><span>250万円</span></div>
 
-    <div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;font-size:.9rem">
-      <label><input type="checkbox" id="kBig" checked> 勤務先の従業員が50人超</label>
-      <label><input type="checkbox" id="kHours" checked> 週20時間以上働く</label>
-      <label><input type="checkbox" id="kStudent"> 学生である</label>
+    <label style="display:block;font-weight:700;margin:16px 0 6px">配偶者(働いている側)の年収
+      <span id="kHIncome" style="color:#2F8A80;font-size:1.15rem">5,000,000</span> 円</label>
+    <input id="kHSlider" type="range" min="1000000" max="14000000" step="100000" value="5000000"
+           style="width:100%;accent-color:#4DB6AC;height:24px">
+
+    <div style="margin-top:14px;font-size:.9rem">
+      <label style="display:block;margin-bottom:4px"><input type="checkbox" id="kBig" checked> 勤務先の従業員が50人超</label>
+      <label style="display:block;margin-bottom:4px"><input type="checkbox" id="kHours" checked> 週20時間以上働く</label>
+      <label style="display:block"><input type="checkbox" id="kStudent"> 学生である</label>
+      <div style="color:#6B6B76;font-size:.8rem;margin-top:8px;line-height:1.6">
+        この3つは<strong>106万円の壁が効くかどうか</strong>を決める条件です。
+        「従業員50人超」と「週20時間以上」の<strong>両方</strong>にあてはまり、かつ学生でない場合だけ、
+        年収106万円で社会保険に加入します。どちらか一方でも外れると、壁は130万円まで動きます。
+      </div>
     </div>
+
+    <div id="kQuick" style="margin-top:14px;padding:12px;border-radius:10px;background:#FFF5EF;
+         line-height:1.8;font-size:.95rem"></div>
   </div>
 
   <canvas id="kChart" width="720" height="380"
@@ -1020,7 +1033,9 @@ def build_kabe():
   var S=document.getElementById('kSlider'), L=document.getElementById('kIncome'),
       V=document.getElementById('kVerdict'), C=document.getElementById('kChart'),
       B=document.getElementById('kBig'), H=document.getElementById('kHours'),
-      ST=document.getElementById('kStudent');
+      ST=document.getElementById('kStudent'),
+      HS=document.getElementById('kHSlider'), HL=document.getElementById('kHIncome'),
+      Q=document.getElementById('kQuick');
   var yen=function(n){{return Math.round(n).toLocaleString('ja-JP');}};
 
   // 社会保険に入るかどうか(厚労省の要件)
@@ -1029,15 +1044,45 @@ def build_kabe():
     if(B.checked && H.checked && inc>=1060000) return true;  // 106万の壁
     return inc>=1300000;                                // 130万の壁(扶養から外れる)
   }}
-  // 世帯の手取り(目安)。妻の収入から本人の負担を引き、夫側の控除減も反映する
+  // 配偶者(働いている側)の合計所得ざっくり。給与所得控除を引いた額
+  function partnerIncome(h){{
+    var ded = h<=1900000 ? 650000
+            : h<=3600000 ? h*0.3+80000
+            : h<=6600000 ? h*0.2+440000
+            : h<=8500000 ? h*0.1+1100000 : 1950000;
+    return Math.max(0, h-ded);
+  }}
+  // 配偶者控除・配偶者特別控除は、控除を受ける側の合計所得が1,000万円超だと使えない。
+  // 900万円以下=38万、900万超950万以下=26万、950万超1,000万以下=13万。
+  function spouseDeduction(h){{
+    var a = partnerIncome(h);
+    if(a>10000000) return 0;
+    if(a>9500000) return 130000;
+    if(a>9000000) return 260000;
+    return 380000;
+  }}
+  // 控除を失ったときの増税額は相手の税率で決まる(所得税+住民税10%の概算)
+  function partnerRate(h){{
+    var a = partnerIncome(h);
+    var it = a<=1950000 ? 0.05 : a<=3300000 ? 0.10 : a<=6950000 ? 0.20
+           : a<=9000000 ? 0.23 : a<=18000000 ? 0.33 : 0.40;
+    return it + 0.10;
+  }}
+  // 世帯の手取り(目安)
   function net(inc){{
+    var h = +HS.value;
     var ins = insured(inc) ? inc*0.15 : 0;              // 社会保険料 約15%
     var taxable = Math.max(0, inc - 650000 - 950000);   // 給与所得控除65万 + 基礎控除95万
     var itax = taxable*0.05;                            // 所得税(概算5%)
-    var husband = 0;
-    if(inc>1230000) husband += 380000*0.15;             // 配偶者控除38万を失う分の夫の増税(概算)
-    if(inc>2015999) husband += 0;
-    return inc - ins - itax - husband;
+    var lost = 0;
+    var d = spouseDeduction(h);
+    if(inc>1230000 && inc<=2015999) {{
+      // 配偶者特別控除へ移行。収入が増えるほど段階的に減る(直線で近似)
+      lost = d * (inc-1230000)/(2015999-1230000);
+    }} else if(inc>2015999) {{
+      lost = d;                                        // 控除が完全になくなる
+    }}
+    return inc - ins - itax - lost*partnerRate(h);
   }}
 
   function draw(cur){{
@@ -1067,7 +1112,18 @@ def build_kabe():
 
   function update(){{
     var inc=+S.value; L.textContent=yen(inc);
+    var hInc=+HS.value; HL.textContent=yen(hInc);
     var ins=insured(inc), rows=[];
+    // スライダーのすぐ下に要点だけ出す(グラフまでスクロールしなくても分かるように)
+    var ok=function(b,s){{return '<span style="color:'+(b?'#3F6F69':'#D14757')+'">'+s+'</span>';}};
+    var d=spouseDeduction(hInc);
+    Q.innerHTML =
+      '手取りの目安 <span style="color:#F4643B;font-size:1.25rem">'+yen(net(inc))+'</span> 円<br>'
+      + ok(inc<=1230000, inc<=1230000?'✓ 配偶者控除に入れます':'✗ 配偶者控除から外れます')
+      + '　' + ok(!ins, ins?'✗ 社会保険に加入':'✓ 社会保険は扶養のまま')
+      + '　' + ok(inc<=1600000, inc<=1600000?'✓ 所得税なし':'✗ 所得税あり')
+      + (d===0 ? '<br><span style="color:#D14757;font-size:.85rem">'
+                 + '配偶者の所得が高いため、配偶者控除・配偶者特別控除は使えません</span>' : '');
     rows.push(['配偶者控除(38万円)', inc<=1230000 ? '入れます' : '外れます', inc<=1230000]);
     rows.push(['本人の所得税', inc<=1600000 ? 'かかりません' : 'かかります', inc<=1600000]);
     rows.push(['社会保険', ins ? '自分で加入します' : '扶養のままです', !ins]);
@@ -1086,6 +1142,7 @@ def build_kabe():
     V.innerHTML=h; draw(inc);
   }}
   S.addEventListener('input',update);
+  HS.addEventListener('input',update);
   [B,H,ST].forEach(function(e){{e.addEventListener('change',update);}});
   update();
 }})();
