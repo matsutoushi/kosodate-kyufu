@@ -1115,14 +1115,20 @@ def build_kabe():
   function draw(cur){{
     var ctx=C.getContext('2d'), W=C.width, Hh=C.height, PL=68, PR=16, PT=46, PB=40;
     ctx.clearRect(0,0,W,Hh);
-    var max=2500000, ny=[], lo=Infinity, hi=-Infinity;
-    for(var x=0;x<=max;x+=5000){{
-      var v=net(x); ny.push([x,v]);
-      if(v<lo) lo=v; if(v>hi) hi=v;
+    var max=2500000, ny=[];
+    for(var x=0;x<=max;x+=5000){{ ny.push([x,net(x)]); }}
+    // 縦軸は0からではなく、変化が見えるように範囲を絞る。
+    // ただし相手の年収を動かすたびに軸が動くと読みづらいので、
+    // 「控除の損失が最大のとき」と「まったくないとき」の両端で固定する。
+    // こうすると相手の年収を変えても軸は動かず、線だけが動く。
+    var lo=Infinity, hi=-Infinity, MAXLOSS=380000*0.50;
+    for(var x3=0;x3<=max;x3+=5000){{
+      var base = x3 - (insured(x3) ? x3*0.15 : 0);      // 社会保険だけ引いた線
+      var worst = base - Math.max(0, x3-1600000)*0.05 - (x3>1600000 ? MAXLOSS : 0);
+      if(base>hi) hi=base;
+      if(worst<lo) lo=worst;
     }}
-    // 縦軸は0からではなくデータの範囲にあわせる。
-    // 0から描くと直線に見えてしまい、壁による折れ曲がりが読み取れないため。
-    var pad=(hi-lo)*0.12 || 10000; lo-=pad; hi+=pad;
+    var pad=(hi-lo)*0.06 || 10000; lo-=pad; hi+=pad;
     var sx=function(x){{return PL+(W-PL-PR)*x/max;}};
     var sy=function(v){{return Hh-PB-(Hh-PT-PB)*(v-lo)/(hi-lo);}};
 
