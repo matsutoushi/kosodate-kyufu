@@ -983,6 +983,12 @@ def build_kabe():
 
     <div id="kQuick" style="margin-top:14px;padding:12px;border-radius:10px;background:#FFF5EF;
          line-height:1.8;font-size:.95rem"></div>
+    <div style="color:#6B6B76;font-size:.8rem;margin-top:8px;line-height:1.6">
+      グラフの縦軸は<strong>「配偶者が働くことで世帯に増える手取り」</strong>です。
+      相手の年収そのものは含みません。そのため相手の合計所得が1,000万円を超えると、
+      もともと受けられる控除がないぶん<strong>失うものもなくなり、線はむしろ上がります</strong>。
+      世帯全体の収入が増えるという意味ではありません。
+    </div>
   </div>
 
   <canvas id="kChart" width="720" height="380"
@@ -1182,7 +1188,7 @@ def build_kabe():
     ctx.arc(sx(cur),sy(net(cur)),7,0,Math.PI*2); ctx.fill();
 
     ctx.fillStyle='#2B2B33'; ctx.font='bold 13px sans-serif';
-    ctx.fillText('世帯の手取り(目安)', PL, 16);
+    ctx.fillText('配偶者が働いて増える世帯の手取り(目安)', PL, 16);
     ctx.fillStyle='#8A8A94'; ctx.font='10px sans-serif';
     ctx.fillText('※縦軸は0からではありません(変化を見やすくするため)', PL, 30);
   }}
@@ -1211,7 +1217,7 @@ def build_kabe():
     }}
     var sp = spouseStatus(inc, hInc);
     Q.innerHTML =
-      '手取りの目安 <span style="color:#F4643B;font-size:1.25rem">'+yen(net(inc))+'</span> 円<br>'
+      '働いて増える世帯の手取り <span style="color:#F4643B;font-size:1.25rem">'+yen(net(inc))+'</span> 円<br>'
       + ok(sp[1], (sp[1]?'✓ ':'✗ ')+sp[0])
       + '<br>' + ok(!ins, ins?'✗ 社会保険に加入':'✓ 社会保険は扶養のまま')
       + '　' + ok(inc<=1600000, inc<=1600000?'✓ 所得税なし':'✗ 所得税あり');
@@ -1224,7 +1230,7 @@ def build_kabe():
          '</div><div class="d" style="color:'+(r[2]?'#3F6F69':'#D14757')+';font-weight:700">'+r[1]+'</div>'+
          (r[3]?'<div class="d" style="margin-top:4px">'+r[3]+'</div>':'')+'</div>';
     }});
-    h+='<div class="note">手取りの目安: <strong>'+yen(net(inc))+' 円</strong>'+
+    h+='<div class="note">働いて増える世帯の手取り(目安): <strong>'+yen(net(inc))+' 円</strong>'+
        (ins?'（社会保険料の負担が発生しています）':'')+'</div>';
     // 働き損の区間を知らせる
     var best=net(inc), warn=0;
