@@ -1195,12 +1195,16 @@ def build_kabe():
     ctx.strokeStyle='#FF8A65'; ctx.lineWidth=3; ctx.beginPath();
     ny.forEach(function(p,i){{ i?ctx.lineTo(sx(p[0]),sy(p[1])):ctx.moveTo(sx(p[0]),sy(p[1])); }});
     ctx.stroke();
-    // 凡例
+    // 凡例(横軸のラベルと重ならないよう、グラフの内側に置く)
     ctx.font='11px sans-serif';
-    ctx.fillStyle='#FF8A65'; ctx.fillRect(W-190,Hh-PB+8,14,3);
-    ctx.fillStyle='#6B6B76'; ctx.fillText('実際の手取り', W-170, Hh-PB+12);
-    ctx.fillStyle='#9AA7B4'; ctx.fillRect(W-92,Hh-PB+8,14,3);
-    ctx.fillStyle='#6B6B76'; ctx.fillText('所得税なしの場合', W-72, Hh-PB+12);
+    var lw=150, lh=40, lx=W-PR-lw-10, ly=Hh-PB-lh-12;
+    ctx.fillStyle='rgba(255,255,255,0.88)';
+    ctx.beginPath(); ctx.roundRect(lx, ly, lw, lh, 6); ctx.fill();
+    ctx.strokeStyle='#EFE7E1'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle='#FF8A65'; ctx.fillRect(lx+10, ly+11, 14, 3);
+    ctx.fillStyle='#6B6B76'; ctx.fillText('実際の手取り', lx+30, ly+15);
+    ctx.fillStyle='#9AA7B4'; ctx.fillRect(lx+10, ly+27, 14, 3);
+    ctx.fillStyle='#6B6B76'; ctx.fillText('所得税なしの場合', lx+30, ly+31);
     // 現在地
     ctx.strokeStyle='#F4643B'; ctx.setLineDash([3,3]); ctx.lineWidth=1; ctx.beginPath();
     ctx.moveTo(sx(cur),PT); ctx.lineTo(sx(cur),Hh-PB); ctx.stroke(); ctx.setLineDash([]);
