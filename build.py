@@ -5,6 +5,7 @@
 """
 import html
 import json
+import urllib.parse
 import os
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -39,6 +40,8 @@ def related_card(prog_id=None, hikaku_pages=()):
   <div class="d">ふるさと納税・通信費・電気ガス・教育費などをまとめました →</div>
 </a>"""
 
+
+GSEARCH = "https://www.google.com/search?q="
 
 NAV = [
     ("./index.html", "ホーム"),
@@ -547,6 +550,10 @@ def build_chiiki(iry, hikaku_pages=(), taiki=None, iry_pref=None, cities=()):
 <div class="wrap">
   <a class="back" href="./index.html">← ホーム</a>
   <h1 style="font-size:1.35rem;margin:.2em 0">あなたの街の子育て環境を調べる</h1>
+  <a class="card" href="./chiiki-list.html">
+    <div class="t">📚 市区町村の一覧から探す</div>
+    <div class="d">医療費助成の対象年齢・待機児童・県内順位を、市区町村ごとにまとめています →</div>
+  </a>
   <p style="color:var(--sub);font-size:.92rem">子ども医療費助成は<strong>国ではなく自治体の制度</strong>。だから住む場所で大きく違います。
   全国{total:,}市区町村を検索できます。</p>
 
@@ -832,7 +839,7 @@ def build_city(c, iry_map, taiki_map, rank_map):
     市独自の支援とあわせて確認してください。<br>
     <a href="./shindan.html">▶ 受け取れる制度を30秒で確認する</a>
   </div>
-  <a class="offbtn" href="{html.escape(c['kosodate_top'])}" target="_blank" rel="noopener">🔗 {html.escape(c['city'])}の子育て支援ページ(公式)</a>
+  <a class="offbtn" href="{html.escape(c['kosodate_top']) if c.get('kosodate_top') else GSEARCH + urllib.parse.quote(c['pref'] + c['city'] + ' 子育て 給付金 公式')}" target="_blank" rel="noopener">🔗 {html.escape(c['city'])}の子育て支援ページ(公式)</a>
 """)
     parts.append(related_card(None, [1]))
     parts.append("</div>")
@@ -937,6 +944,40 @@ def build_policy():
   <p style="font-size:.78rem;color:#a99;margin-top:20px">制定日: 2026年7月25日</p>
 </div>""")
     parts.append(footer())
+    return "".join(parts)
+
+
+def build_city_auto_index(ids):
+    """自動生成した自治体ページの一覧。都道府県ごとにまとめる。
+    孤立ページにするとGoogleにも人にも辿り着けないので、必ずここから繋ぐ。"""
+    byp = {}
+    for cid in ids:
+        rest = cid[len("chiiki-"):]
+        for suf in ("都", "道", "府", "県"):
+            i = rest.find(suf)
+            if i > 0:
+                byp.setdefault(rest[:i + 1], []).append((cid, rest[i + 1:]))
+                break
+    parts = [head(f"市区町村から探す｜{SITE_NAME}",
+                  "子ども医療費助成が何歳までか、保育園の待機児童が何人かを、市区町村ごとにまとめています。",
+                  "/chiiki-list.html")]
+    parts.append(f"""
+<header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
+<div class="wrap body">
+  <a class="back" href="./chiiki.html">← 地域で調べる</a>
+  <h1 style="font-size:1.35rem;margin:.2em 0">市区町村から探す</h1>
+  <p>子ども医療費助成が何歳までか、保育園の待機児童が何人か、県内で何番目に手厚いかを
+  市区町村ごとにまとめています。まずは規模の大きい市区町村から掲載しています。</p>""")
+    for pref in sorted(byp):
+        parts.append(f'<div class="sec-title">{html.escape(pref)}</div><p style="line-height:2.2">')
+        for cid, city in sorted(byp[pref], key=lambda x: x[1]):
+            parts.append(f'<a href="./{urllib.parse.quote(cid)}.html" '
+                         f'style="display:inline-block;margin:0 8px 4px 0">{html.escape(city)}</a>')
+        parts.append("</p>")
+    parts.append('<div class="note">掲載のない市区町村は、'
+                 '<a href="./chiiki.html">地域で調べる</a>から検索できます。</div>')
+    parts.append("</div>" + footer())
     return "".join(parts)
 
 
@@ -1471,6 +1512,35 @@ def main():
             with open(os.path.join(SITE, c["id"] + ".html"), "w", encoding="utf-8") as f:
                 f.write(build_city(c, iry_map, taiki_map, rank_map))
             city_pages.append(c)
+        # --- 全国データだけで作れる自治体ページを、規模の大きい順に自動生成する ---
+        # 手作業の独自制度は無いが、医療費助成・待機児童の年齢別内訳・県内順位は
+        # 一次データから出せる。競合が「自治体によります」で済ませている領域なので、
+        # ロングテールの検索に対して意味のあるページになる。
+        AUTO_N = 200
+        have = {(c["pref"], c["city"]) for c in cj["cities"]}
+        pool = [t for t in _tk
+                if (t["pref"], t["city"]) in iry_map and (t["pref"], t["city"]) not in have]
+        pool.sort(key=lambda t: -(t.get("apply") or 0))
+        auto_ids = []
+        for t in pool[:AUTO_N]:
+            cid = f'chiiki-{t["pref"]}{t["city"]}'
+            auto = {
+                "id": cid, "pref": t["pref"], "city": t["city"],
+                "lead": f'{t["pref"]}{t["city"]}の子ども医療費助成と保育園の状況を、'
+                        'こども家庭庁の公表データからまとめました。'
+                        '市区町村が独自に出している給付金は、下の公式サイト検索から確認できます。',
+                "programs": [], "checked": "",
+                "note": "このページは全国の公表データから自動で作成しています。"
+                        "市区町村が独自に実施している給付金は含まれていません。",
+            }
+            with open(os.path.join(SITE, cid + ".html"), "w", encoding="utf-8") as f:
+                f.write(build_city(auto, iry_map, taiki_map, rank_map))
+            auto_ids.append(cid)
+        data["_city_auto"] = auto_ids
+        with open(os.path.join(SITE, "chiiki-list.html"), "w", encoding="utf-8") as f:
+            f.write(build_city_auto_index(auto_ids))
+        print(f"  自動生成の自治体ページ: {len(auto_ids)}件")
+
         idx = build_city_index(city_pages, iry_map, taiki_map, rank_map, "東京都", "tokyo23",
                                "東京23区の子育て支援をくらべる",
                                "東京23区は、東京都全域の制度(018サポートなど)が共通して使えるうえに、区ごとの独自支援があります。医療費助成・待機児童・区独自の制度をまとめて比べられます。")
@@ -1522,6 +1592,8 @@ def main():
     pages += [f"/{p['id']}.html" for p in data["programs"]]
     pages += [f"/{a['id']}.html" for a in (data.get("_articles") or [])]
     pages += ["/kabe.html"]
+    pages += [f"/{x}.html" for x in (data.get("_city_auto") or [])]
+    pages += ["/chiiki-list.html"]
     if os.path.exists(hikaku_path):
         pages += [f"/{pg['id']}.html" for pg in json.load(open(hikaku_path, encoding="utf-8"))["pages"]]
     today = data.get("updated", "")
