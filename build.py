@@ -984,10 +984,9 @@ def build_kabe():
     <div id="kQuick" style="margin-top:14px;padding:12px;border-radius:10px;background:#FFF5EF;
          line-height:1.8;font-size:.95rem"></div>
     <div style="color:#6B6B76;font-size:.8rem;margin-top:8px;line-height:1.6">
-      グラフの縦軸は<strong>「配偶者が働くことで世帯に増える手取り」</strong>です。
-      相手の年収そのものは含みません。そのため相手の合計所得が1,000万円を超えると、
-      もともと受けられる控除がないぶん<strong>失うものもなくなり、線はむしろ上がります</strong>。
-      世帯全体の収入が増えるという意味ではありません。
+      グラフの縦軸は<strong>世帯の手取り合計</strong>です。ふたりぶんの収入から、
+      社会保険料・所得税・住民税を引いた目安を出しています。
+      相手の年収を動かすと世帯の水準ごと上下し、働く側の年収を動かすと軸は固定されたまま線が動きます。
     </div>
   </div>
 
@@ -1109,13 +1108,38 @@ def build_kabe():
   function lostDeduction(inc, h){{
     return spouseDeduction(h) - spouseAllowance(inc,h).amt;
   }}
-  // 世帯の手取り(目安)。noTax=true なら所得税がなかった場合の比較線
+  // 基礎控除(令和7・8年分。合計所得で変わる)
+  function basicDed(a){{
+    return a<=1320000 ? 950000 : a<=3360000 ? 880000
+         : a<=4890000 ? 680000 : a<=6550000 ? 630000
+         : a<=23500000 ? 580000 : 0;
+  }}
+  // 所得税(超過累進)。課税所得から求める
+  function incomeTax(t){{
+    if(t<=0) return 0;
+    if(t<=1950000)  return t*0.05;
+    if(t<=3300000)  return t*0.10 - 97500;
+    if(t<=6950000)  return t*0.20 - 427500;
+    if(t<=9000000)  return t*0.23 - 636000;
+    if(t<=18000000) return t*0.33 - 1536000;
+    if(t<=40000000) return t*0.40 - 2796000;
+    return t*0.45 - 4796000;
+  }}
+  // 働いている側(相手)の手取り。配偶者(特別)控除の有無で変わる
+  function partnerNet(h, deduction){{
+    var ins = h*0.15;                       // 社会保険料 約15%
+    var a = partnerIncome(h);               // 給与所得
+    var taxable = Math.max(0, a - ins - basicDed(a) - deduction);
+    return h - ins - incomeTax(taxable) - taxable*0.10;   // 住民税10%
+  }}
+  // 世帯の手取り合計(目安)。noTax=true なら働く側の所得税がなかった場合の比較線
   function net(inc, noTax){{
     var h = +HS.value;
     var ins = insured(inc) ? inc*0.15 : 0;              // 社会保険料 約15%
     var taxable = Math.max(0, inc - 650000 - 950000);   // 給与所得控除65万 + 基礎控除95万
-    var itax = noTax ? 0 : taxable*0.05;                // 所得税(概算5%)
-    return inc - ins - itax - lostDeduction(inc,h)*partnerRate(h);
+    var itax = noTax ? 0 : taxable*0.05;                // 働く側の所得税(概算5%)
+    // 世帯合計 = 相手の手取り(控除の影響込み) + 働く側の手取り
+    return partnerNet(h, spouseAllowance(inc,h).amt) + (inc - ins - itax);
   }}
 
   function draw(cur){{
@@ -1127,14 +1151,10 @@ def build_kabe():
     // ただし相手の年収を動かすたびに軸が動くと読みづらいので、
     // 「控除の損失が最大のとき」と「まったくないとき」の両端で固定する。
     // こうすると相手の年収を変えても軸は動かず、線だけが動く。
-    var lo=Infinity, hi=-Infinity, MAXLOSS=380000*0.50;
-    for(var x3=0;x3<=max;x3+=5000){{
-      var base = x3 - (insured(x3) ? x3*0.15 : 0);      // 社会保険だけ引いた線
-      var worst = base - Math.max(0, x3-1600000)*0.05 - (x3>1600000 ? MAXLOSS : 0);
-      if(base>hi) hi=base;
-      if(worst<lo) lo=worst;
-    }}
-    var pad=(hi-lo)*0.06 || 10000; lo-=pad; hi+=pad;
+    // 縦軸は相手の年収だけで決める。働く側のスライダーを動かしても軸は動かず、
+    // 線だけが動く。相手のスライダーを動かしたときは世帯の水準ごと上下する。
+    var baseNet = partnerNet(+HS.value, spouseDeduction(+HS.value));
+    var lo = baseNet - 250000, hi = baseNet + max*0.95;
     var sx=function(x){{return PL+(W-PL-PR)*x/max;}};
     var sy=function(v){{return Hh-PB-(Hh-PT-PB)*(v-lo)/(hi-lo);}};
 
@@ -1188,7 +1208,7 @@ def build_kabe():
     ctx.arc(sx(cur),sy(net(cur)),7,0,Math.PI*2); ctx.fill();
 
     ctx.fillStyle='#2B2B33'; ctx.font='bold 13px sans-serif';
-    ctx.fillText('配偶者が働いて増える世帯の手取り(目安)', PL, 16);
+    ctx.fillText('世帯の手取り合計(目安)', PL, 16);
     ctx.fillStyle='#8A8A94'; ctx.font='10px sans-serif';
     ctx.fillText('※縦軸は0からではありません(変化を見やすくするため)', PL, 30);
   }}
@@ -1217,7 +1237,7 @@ def build_kabe():
     }}
     var sp = spouseStatus(inc, hInc);
     Q.innerHTML =
-      '働いて増える世帯の手取り <span style="color:#F4643B;font-size:1.25rem">'+yen(net(inc))+'</span> 円<br>'
+      '世帯の手取り合計 <span style="color:#F4643B;font-size:1.25rem">'+yen(net(inc))+'</span> 円<br>'
       + ok(sp[1], (sp[1]?'✓ ':'✗ ')+sp[0])
       + '<br>' + ok(!ins, ins?'✗ 社会保険に加入':'✓ 社会保険は扶養のまま')
       + '　' + ok(inc<=1600000, inc<=1600000?'✓ 所得税なし':'✗ 所得税あり');
@@ -1230,7 +1250,7 @@ def build_kabe():
          '</div><div class="d" style="color:'+(r[2]?'#3F6F69':'#D14757')+';font-weight:700">'+r[1]+'</div>'+
          (r[3]?'<div class="d" style="margin-top:4px">'+r[3]+'</div>':'')+'</div>';
     }});
-    h+='<div class="note">働いて増える世帯の手取り(目安): <strong>'+yen(net(inc))+' 円</strong>'+
+    h+='<div class="note">世帯の手取り合計(目安): <strong>'+yen(net(inc))+' 円</strong>'+
        (ins?'（社会保険料の負担が発生しています）':'')+'</div>';
     // 働き損の区間を知らせる
     var best=net(inc), warn=0;
