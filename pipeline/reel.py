@@ -1425,6 +1425,184 @@ def render_shotokuseigen(T):
     return frame, 41.0
 
 
+def render_fuyokojo(T):
+    """Q案: 16歳未満に扶養控除はない。誤解が多く、年末調整とふるさと納税の両方に効く。約30秒。"""
+    em = emoji_layer("📋", 200)
+    hook = text_layer("子どもが何人いても\n扶養控除は増えません", font(76), T["ink"])
+
+    s2a = text_layer("扶養控除の対象になるのは", font(56), T["sub"])
+    s2b = text_layer("16歳以上の子どもだけ", font(80), T["brand_d"])
+    s2c = text_layer("児童手当の拡充と引き換えに 対象から外れました", font(48), T["sub"])
+
+    s3 = text_layer("だから こうなります", font(58), T["sub"])
+    b1 = bar_layer("未就学児・小学生が何人いても", "所得税の控除は増えません", T)
+    b2 = bar_layer("ふるさと納税の上限額も", "16歳未満の子では下がりません", T)
+    b3 = bar_layer("16〜18歳の子がいると", "扶養控除が効くので 上限額は下がります", T)
+
+    s4a = text_layer("よくある損のしかた", font(56), T["sub"])
+    s4b = text_layer("「子どもが3人いるから\n上限が低いはず」", font(68), T["ink"])
+    s4c = text_layer("と思い込んで、少なめに寄付してしまう", font(48), T["sub"])
+
+    s5a = text_layer("でも 書かないと損をする欄があります", font(52), T["ink"])
+    w1 = bar_layer("扶養控除等申告書の", "「住民税に関する事項」の欄", T)
+    w2 = bar_layer("16歳未満の子はここに書く", "住民税の非課税判定に使われます", T)
+
+    s6a = text_layer("まとめると", font(56), T["sub"])
+    s6b = text_layer("所得税では効かない\n住民税では効く", font(72), T["brand_d"])
+    s6c = text_layer("「対象外だから空欄」が いちばん多い間違いです", font(46), T["ink"])
+
+    c = cta_save(T, "年末調整の書類を書く前に", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 3.0:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1010, dy=int((1 - p) * 55))
+        elif t < 9.0:
+            tt = t - 3.0
+            paste_center(img, s2a, 620, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.28 - 0.28 * ease_out(pp)
+                z = s2b.resize((int(s2b.width * sc), int(s2b.height * sc)))
+                paste_center(img, z, 860, alpha=pp)
+            if tt > 1.3:
+                paste_center(img, s2c, 1120, alpha=ease_out(min(1, (tt - 1.3) / 0.5)))
+        elif t < 16.6:
+            tt = t - 9.0
+            paste_center(img, s3, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([b1, b2, b3]):
+                st = 0.4 + i * 1.2
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 700 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 23.0:
+            tt = t - 16.6
+            paste_center(img, s4a, 580, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s4b, 860, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
+            if tt > 1.3:
+                paste_center(img, s4c, 1140, alpha=ease_out(min(1, (tt - 1.3) / 0.5)))
+        elif t < 30.0:
+            tt = t - 23.0
+            paste_center(img, s5a, 480, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.5:
+                q = ease_out(min(1, (tt - 0.5) / 0.4))
+                paste_at(img, w1, 90, 760, alpha=q, dx=int((1 - q) * -70))
+            if tt > 1.7:
+                q = ease_out(min(1, (tt - 1.7) / 0.4))
+                paste_at(img, w2, 90, 970, alpha=q, dx=int((1 - q) * -70))
+        elif t < 36.4:
+            tt = t - 30.0
+            paste_center(img, s6a, 600, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s6b, 860, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
+            if tt > 1.3:
+                paste_center(img, s6c, 1150, alpha=ease_out(min(1, (tt - 1.3) / 0.5)))
+        else:
+            draw_cta(img, c, t - 36.4)
+        return img
+
+    return frame, 41.4
+
+
+def render_hitorioya(T):
+    """R案: ひとり親の給付と控除。層は狭いが刺さりが深い。約30秒。"""
+    em = emoji_layer("🌱", 200)
+    hook = text_layer("ひとり親が受け取れる\nお金を整理しました", font(76), T["ink"])
+
+    s2 = text_layer("まず 児童扶養手当", font(58), T["sub"])
+    b1 = bar_layer("1人目（全部支給）", "月額 約48,050円", T)
+    b2 = bar_layer("2人目以降の加算（全部支給）", "月額 約11,350円", T)
+    s2b = text_layer("子ども2人なら 月およそ", font(52), T["sub"])
+    cf = font(140)
+
+    s3a = text_layer("よくある取りこぼし", font(56), T["sub"])
+    s3b = text_layer("「所得制限で無理」と\n決めつけて申請しない", font(68), T["ink"])
+    s3c = text_layer("全部支給でなくても 一部支給に該当することがあります", font(46), T["sub"])
+
+    s4 = text_layer("あわせて申請できるもの", font(56), T["sub"])
+    m1 = bar_layer("ひとり親家庭等医療費助成", "通称マル親。医療費の自己負担分を助成", T)
+    m2 = bar_layer("就学援助（小・中学生）", "学用品費・給食費・修学旅行費など", T)
+
+    s5a = text_layer("税金でも35万円ひけます", font(58), T["ink"])
+    t1 = bar_layer("ひとり親控除 35万円", "婚姻歴を問いません。未婚でも対象です", T)
+    t2 = bar_layer("本人の合計所得500万円以下", "年末調整でも申告できます", T)
+
+    s6a = text_layer("忘れてはいけないこと", font(56), T["sub"])
+    s6b = text_layer("毎年の現況届", font(84), T["brand_d"])
+    s6c = text_layer("出し忘れると 支給が止まります", font(52), T["ink"])
+
+    c = cta_save(T, "申請の前に確かめられるように", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 3.0:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1010, dy=int((1 - p) * 55))
+        elif t < 10.4:
+            tt = t - 3.0
+            paste_center(img, s2, 430, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                q = ease_out(min(1, (tt - 0.4) / 0.4))
+                paste_at(img, b1, 90, 680, alpha=q, dx=int((1 - q) * -70))
+            if tt > 1.5:
+                q = ease_out(min(1, (tt - 1.5) / 0.4))
+                paste_at(img, b2, 90, 890, alpha=q, dx=int((1 - q) * -70))
+            if tt > 2.7:
+                paste_center(img, s2b, 1110, alpha=ease_out(min(1, (tt - 2.7) / 0.4)))
+                cp = ease_out(min(1, max(0.0, (tt - 3.1) / 1.8)))
+                txt = f"{int(59400 * cp):,} 円"
+                tw = d.textlength(txt, font=cf)
+                d.text(((W - tw) / 2, 1180), txt, font=cf, fill=T["brand_d"])
+        elif t < 17.0:
+            tt = t - 10.4
+            paste_center(img, s3a, 580, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s3b, 860, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
+            if tt > 1.3:
+                paste_center(img, s3c, 1150, alpha=ease_out(min(1, (tt - 1.3) / 0.5)))
+        elif t < 23.6:
+            tt = t - 17.0
+            paste_center(img, s4, 500, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.5:
+                q = ease_out(min(1, (tt - 0.5) / 0.4))
+                paste_at(img, m1, 90, 760, alpha=q, dx=int((1 - q) * -70))
+            if tt > 1.7:
+                q = ease_out(min(1, (tt - 1.7) / 0.4))
+                paste_at(img, m2, 90, 970, alpha=q, dx=int((1 - q) * -70))
+        elif t < 30.2:
+            tt = t - 23.6
+            paste_center(img, s5a, 500, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.5:
+                q = ease_out(min(1, (tt - 0.5) / 0.4))
+                paste_at(img, t1, 90, 760, alpha=q, dx=int((1 - q) * -70))
+            if tt > 1.7:
+                q = ease_out(min(1, (tt - 1.7) / 0.4))
+                paste_at(img, t2, 90, 970, alpha=q, dx=int((1 - q) * -70))
+        elif t < 36.4:
+            tt = t - 30.2
+            paste_center(img, s6a, 620, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.3 - 0.3 * ease_out(pp)
+                z = s6b.resize((int(s6b.width * sc), int(s6b.height * sc)))
+                paste_center(img, z, 880, alpha=pp)
+            if tt > 1.3:
+                paste_center(img, s6c, 1130, alpha=ease_out(min(1, (tt - 1.3) / 0.5)))
+        else:
+            draw_cta(img, c, t - 36.4)
+        return img
+
+    return frame, 41.4
+
+
 # --- カバー画像 -------------------------------------------------------------
 # リールは全要素がフェードインするので1フレーム目がほぼ空白。Instagramに自動選択
 # させるとプロフィールが白紙で並ぶため、カバーは必ず別途アップロードする。
@@ -1469,6 +1647,8 @@ COVERS = {
     "ikukyu-jiki":     ("🗓️", "育休は いつ取るかで", "手取りが変わる", "14日に土日祝も含まれます"),
     "furusato":        ("🎁", "ふるさと納税", "子育て世帯の勘違い", "16歳未満は上限に影響しない"),
     "shotoku-seigen":  ("🏥", "所得制限があるのは", "全国で49自治体", "1,740市区町村を調べました"),
+    "fuyo-kojo":       ("📋", "子どもが何人いても", "扶養控除は増えない", "16歳未満は対象外です"),
+    "hitorioya":       ("🌱", "ひとり親が", "受け取れるお金", "手当・助成・控除をまとめて"),
 }
 
 
@@ -1862,6 +2042,68 @@ CAPTION_SEIGEN = """【「うちは所得が高いから対象外」その思い
 #子ども医療費 #医療費助成 #子育て #所得制限 #新米ママ #プレママ #ワーママ #引っ越し #自治体 #知って得する"""
 
 
+CAPTION_FUYO = """【子どもが何人いても、扶養控除は増えません】
+
+📌 年末調整の書類を書く前に保存しておいてください。
+
+扶養控除の対象になるのは16歳以上の子どもだけです。
+16歳未満は、児童手当が拡充されたときに対象から外れました。
+
+【だからこうなります】
+▶ 未就学児・小学生が何人いても、所得税の控除は増えません
+▶ ふるさと納税の上限額も、16歳未満の子では下がりません
+▶ 16〜18歳の子がいると扶養控除が効くので、上限額は下がります
+
+【よくある損のしかた】
+「子どもが3人いるから上限が低いはず」と思い込んで、
+ふるさと納税を少なめにしてしまうケースです。
+シミュレーターに入力するとき、16歳未満は扶養家族に含めません。
+
+【でも、書かないと損をする欄があります】
+扶養控除等申告書の「住民税に関する事項」という欄。
+ここには16歳未満の子どもを記載します。
+住民税の非課税限度額の判定に使われるためです。
+
+所得税では効かないけれど、住民税では効く。
+「対象外だから空欄でいい」が、いちばん多い間違いです。
+
+※出典 国税庁。詳しくは勤務先やお住まいの市区町村にご確認ください。
+
+#年末調整 #扶養控除 #ふるさと納税 #住民税 #子育て #新米ママ #ワーママ #家計管理 #節約 #知って得する"""
+
+
+CAPTION_HITORIOYA = """【ひとり親が受け取れるお金を整理しました】
+
+📌 手続きのときに見返せるよう保存しておいてください。
+
+【児童扶養手当】
+▶ 1人目（全部支給）… 月額 約48,050円
+▶ 2人目以降の加算（全部支給）… 月額 約11,350円
+子ども2人なら、月およそ59,400円が目安です（所得により変わります）。
+
+【よくある取りこぼし】
+「所得制限があるから無理」と決めつけて申請しないケースです。
+全部支給に届かなくても、一部支給に該当することがあります。
+まず窓口で確認してみてください。
+
+【あわせて申請できるもの】
+▶ ひとり親家庭等医療費助成（マル親）… 医療費の自己負担分を助成
+▶ 就学援助（小・中学生）… 学用品費・給食費・修学旅行費など
+
+【税金でも35万円ひけます】
+ひとり親控除は婚姻歴を問いません。未婚でも対象です。
+本人の合計所得500万円以下が条件で、年末調整でも申告できます。
+出し忘れても5年さかのぼれます。
+
+【忘れてはいけないこと】
+児童扶養手当には毎年の現況届があります。
+出し忘れると支給が止まります。
+
+※金額は2026年時点の目安です。所得制限や自己負担は自治体で異なります。
+
+#ひとり親 #シングルマザー #シングルファザー #児童扶養手当 #ひとり親控除 #子育て #給付金 #家計管理 #知って得する #ひとり親家庭"""
+
+
 REELS = [
     # (名前, テーマ, 描画関数, キャプション, 状態)
     ("018support",      "mint",     render_018,        CAPTION_018,       "投稿済み"),
@@ -1881,6 +2123,8 @@ REELS = [
     ("ikukyu-jiki",     "mint",     render_ikukyu,     CAPTION_IKUKYU,    "投稿済み"),
     ("furusato",        "coral",    render_furusato,   CAPTION_FURUSATO,  "未投稿"),
     ("shotoku-seigen",  "navy",     render_shotokuseigen, CAPTION_SEIGEN, "未投稿"),
+    ("fuyo-kojo",       "lavender", render_fuyokojo,   CAPTION_FUYO,      "未投稿"),
+    ("hitorioya",       "peach",    render_hitorioya,  CAPTION_HITORIOYA, "未投稿"),
 ]
 
 
@@ -1945,6 +2189,8 @@ def write_index():
         "ikukyu-jiki": "育休をいつ取ると得か",
         "furusato": "ふるさと納税の勘違い(子育て世帯)",
         "shotoku-seigen": "医療費助成の所得制限は49自治体だけ",
+        "fuyo-kojo": "16歳未満に扶養控除はない",
+        "hitorioya": "ひとり親の手当・助成・控除",
     }
     for i, (name, _t, _f, _c, status) in enumerate(REELS, 1):
         lines.append(f"| {i:02d} | `{i:02d}-{name}/` | {NOTE.get(name, '')} | {status} |")
