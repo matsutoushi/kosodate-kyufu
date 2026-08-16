@@ -1243,6 +1243,100 @@ def render_ikukyu(T):
     return frame, 41.4
 
 
+def render_furusato(T):
+    """O案: 子育て世帯のふるさと納税。9〜12月に向けた仕込み。約30秒。"""
+    em = emoji_layer("🎁", 200)
+    hook = text_layer("ふるさと納税、\nまだ迷っていますか", font(82), T["ink"])
+
+    s2a = text_layer("しくみはシンプルです", font(56), T["sub"])
+    s2b = text_layer("自己負担は 2,000円だけ", font(84), T["brand_d"])
+    s2c = text_layer("超えた分が 税金から差し引かれます", font(50), T["sub"])
+    s2d = text_layer("おむつ・お米など 必ず使うものを選ぶ", font(52), T["ink"])
+
+    s3a = text_layer("子育て世帯が誤解しがちなこと", font(54), T["sub"])
+    s3b = text_layer("16歳未満の子どもは\n上限額に影響しません", font(70), T["ink"])
+    s3c = text_layer("扶養控除の対象外だからです", font(46), T["sub"])
+    s3d = text_layer("「子が多いから上限が低い」は誤解です", font(50), T["brand_d"])
+
+    s4a = text_layer("いちばん事故が多いのは", font(56), T["sub"])
+    b1 = bar_layer("育休・産休を取った年", "上限額が大きく下がります", T)
+    b2 = bar_layer("理由", "育休給付金と出産手当金は非課税だから", T)
+    b3 = bar_layer("対処", "収入が多い側の名義で寄付する", T)
+
+    s5a = text_layer("出産した年は もうひとつ", font(56), T["sub"])
+    s5b = text_layer("医療費控除を申告すると\nワンストップ特例は無効", font(64), T["ink"])
+    s5c = text_layer("確定申告で寄付金控除も一緒に申告すればOK", font(48), T["sub"])
+
+    s6 = text_layer("期限は2つ", font(58), T["sub"])
+    d1 = bar_layer("寄付そのもの", "12月31日まで（その年の所得で計算）", T)
+    d2 = bar_layer("ワンストップの申請書", "翌年1月10日 必着（消印有効ではありません）", T)
+
+    c = cta_save(T, "上限額を確かめる前に", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 3.0:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1010, dy=int((1 - p) * 55))
+        elif t < 9.2:
+            tt = t - 3.0
+            paste_center(img, s2a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.3 - 0.3 * ease_out(pp)
+                z = s2b.resize((int(s2b.width * sc), int(s2b.height * sc)))
+                paste_center(img, z, 790, alpha=pp)
+            if tt > 1.2:
+                paste_center(img, s2c, 990, alpha=ease_out(min(1, (tt - 1.2) / 0.4)))
+            if tt > 2.2:
+                paste_center(img, s2d, 1200, alpha=ease_out(min(1, (tt - 2.2) / 0.5)))
+        elif t < 16.0:
+            tt = t - 9.2
+            paste_center(img, s3a, 500, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.22 - 0.22 * ease_out(pp)
+                z = s3b.resize((int(s3b.width * sc), int(s3b.height * sc)))
+                paste_center(img, z, 800, alpha=pp)
+            if tt > 1.4:
+                paste_center(img, s3c, 1030, alpha=ease_out(min(1, (tt - 1.4) / 0.4)))
+            if tt > 2.4:
+                paste_center(img, s3d, 1220, alpha=ease_out(min(1, (tt - 2.4) / 0.5)))
+        elif t < 23.6:
+            tt = t - 16.0
+            paste_center(img, s4a, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([b1, b2, b3]):
+                st = 0.4 + i * 1.2
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 700 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 30.2:
+            tt = t - 23.6
+            paste_center(img, s5a, 580, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s5b, 860, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
+            if tt > 1.2:
+                paste_center(img, s5c, 1160, alpha=ease_out(min(1, (tt - 1.2) / 0.5)))
+        elif t < 36.4:
+            tt = t - 30.2
+            paste_center(img, s6, 520, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([d1, d2]):
+                st = 0.4 + i * 1.3
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 790 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        else:
+            draw_cta(img, c, t - 36.4)
+        return img
+
+    return frame, 41.4
+
+
 # --- カバー画像 -------------------------------------------------------------
 # リールは全要素がフェードインするので1フレーム目がほぼ空白。Instagramに自動選択
 # させるとプロフィールが白紙で並ぶため、カバーは必ず別途アップロードする。
@@ -1285,6 +1379,7 @@ COVERS = {
     "iryohi-kojo":     ("🧾", "出産した年は", "お金が戻ります", "医療費控除のしくみ"),
     "nenshu-kabe":     ("🧱", "103万の壁は", "もうありません", "いまの壁は106・123・160万"),
     "ikukyu-jiki":     ("🗓️", "育休は いつ取るかで", "手取りが変わる", "14日に土日祝も含まれます"),
+    "furusato":        ("🎁", "ふるさと納税", "子育て世帯の勘違い", "16歳未満は上限に影響しない"),
 }
 
 
@@ -1607,6 +1702,43 @@ CAPTION_IKUKYU = """【育休は「いつ取るか」で手取りが変わりま
 #育休 #育児休業 #産休 #パパ育休 #社会保険料 #ワーママ #共働き #新米ママ #プレママ #家計管理"""
 
 
+CAPTION_FURUSATO = """【ふるさと納税、子育て世帯がやりがちな勘違い】
+
+📌 上限額を調べる前に保存しておいてください。
+
+しくみはシンプルで、自己負担は2,000円だけ。
+寄付額から2,000円を引いた分が、所得税と住民税から差し引かれます。
+おむつ・おしりふき・お米など「必ず使うもの」を選ぶと、家計に効きます。
+
+【勘違い①：子どもが多いと上限額が下がる】
+16歳未満の子どもは扶養控除の対象外なので、上限額に影響しません。
+児童手当が拡充されたときに、扶養控除から外れました。
+未就学児や小学生が何人いても上限は変わらないので、
+少なめに寄付している人は損をしている可能性があります。
+（16〜18歳の子がいる場合は扶養控除が効くため、上限は下がります）
+
+【勘違い②：去年と同じ感覚で寄付する】
+育休・産休を取った年は、上限額が大きく下がります。
+育児休業給付金と出産手当金は非課税で、所得に入らないためです。
+収入がなかった年は、そもそも控除できる住民税がないので全額自己負担になります。
+→ 収入が多い側の名義で寄付してください。
+
+【出産した年の落とし穴】
+医療費控除を申告すると、提出済みのワンストップ特例は無効になります。
+確定申告のときに、寄付金控除も一緒に申告すれば大丈夫です。
+寄付金受領証明書は捨てないでおいてください。
+
+【期限は2つ】
+▶ 寄付そのもの … 12月31日まで
+▶ ワンストップ特例の申請書 … 翌年1月10日 必着（消印有効ではありません）
+
+上限額の考え方は、プロフィールのリンクから詳しく読めます。
+
+※制度の内容は変わることがあります。詳しくは総務省・国税庁のページでご確認ください。個別の税務相談には応じられません。
+
+#ふるさと納税 #ふるさと納税返礼品 #子育て #節約 #家計管理 #新米ママ #プレママ #ワーママ #ふるさと納税初心者 #知って得する"""
+
+
 REELS = [
     # (名前, テーマ, 描画関数, キャプション, 状態)
     ("018support",      "mint",     render_018,        CAPTION_018,       "投稿済み"),
@@ -1620,10 +1752,11 @@ REELS = [
     ("ikuji-10wari",    "peach",    render_ikuji10,    CAPTION_IKUJI10,   "投稿済み"),
     ("koko-sagaku",     "navy",     render_kokosagaku, CAPTION_KOKO,      "投稿済み"),
     ("kyushoku-2026",   "mint",     render_kyushoku,   CAPTION_KYUSHOKU,  "投稿済み"),
-    ("kogaku-ryoyohi",  "coral",    render_kogaku,     CAPTION_KOGAKU,    "未投稿"),
-    ("iryohi-kojo",     "lavender", render_iryohikojo, CAPTION_IRYOHIKOJO, "未投稿"),
-    ("nenshu-kabe",     "navy",     render_kabe,       CAPTION_KABE,      "未投稿"),
-    ("ikukyu-jiki",     "mint",     render_ikukyu,     CAPTION_IKUKYU,    "未投稿"),
+    ("kogaku-ryoyohi",  "coral",    render_kogaku,     CAPTION_KOGAKU,    "投稿済み"),
+    ("iryohi-kojo",     "lavender", render_iryohikojo, CAPTION_IRYOHIKOJO, "投稿済み"),
+    ("nenshu-kabe",     "navy",     render_kabe,       CAPTION_KABE,      "投稿済み"),
+    ("ikukyu-jiki",     "mint",     render_ikukyu,     CAPTION_IKUKYU,    "投稿済み"),
+    ("furusato",        "coral",    render_furusato,   CAPTION_FURUSATO,  "未投稿"),
 ]
 
 
@@ -1686,6 +1819,7 @@ def write_index():
         "iryohi-kojo": "出産した年の医療費控除",
         "nenshu-kabe": "年収の壁(103万はもうない)",
         "ikukyu-jiki": "育休をいつ取ると得か",
+        "furusato": "ふるさと納税の勘違い(子育て世帯)",
     }
     for i, (name, _t, _f, _c, status) in enumerate(REELS, 1):
         lines.append(f"| {i:02d} | `{i:02d}-{name}/` | {NOTE.get(name, '')} | {status} |")
