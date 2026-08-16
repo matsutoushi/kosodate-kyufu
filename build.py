@@ -731,13 +731,15 @@ def build_kakei(hikaku_pages):
 
   <div class="sec-title">見直しの候補</div>""")
 
-    order = ["hikaku-sim", "hikaku-denki", "hikaku-furusato", "hikaku-kyozai", "hikaku-card"]
+    order = ["hikaku-sim", "hikaku-denki", "hikaku-furusato", "hikaku-kawanai",
+             "hikaku-kyozai", "hikaku-card"]
     why = {
         "hikaku-sim": "効果が大きく、一度やれば戻らない。まず手をつけるならここ。",
         "hikaku-denki": "生活を変えずに単価だけ下げられる。手続きもオンラインで完結。",
         "hikaku-furusato": "実質2,000円の負担で、おむつや米など必ず使うものが届く。",
         "hikaku-kyozai": "塾より費用を抑えたい家庭の選択肢。合うかどうかは試してから。",
         "hikaku-card": "毎月必ず出ていく支出の支払い方を変えるだけ。",
+        "hikaku-kawanai": "短い期間しか使わないものは、買わずに済ませる手もある。",
     }
     pages = {p["id"]: p for p in hikaku_pages}
     for i, pid in enumerate(order, 1):
