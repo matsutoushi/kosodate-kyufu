@@ -998,6 +998,7 @@ def build_kabe():
 {site_nav()}
 <div class="wrap body">
   <a class="back" href="./index.html">← ホーム</a>
+  <div class="pr">※本ページはプロモーションを含みます</div>
   <h1 style="font-size:1.35rem;margin:.2em 0">年収の壁シミュレーター</h1>
   <p>2025年(令和7年)の税制改正で「103万円の壁」はなくなりました。いまの壁がどこにあるのか、
   スライダーを動かして確かめてください。<strong>世帯の手取り</strong>がその場で計算されます。</p>
@@ -1082,6 +1083,28 @@ def build_kabe():
     <li><a href="https://www.nta.go.jp/users/gensen/2025kiso/index.htm" target="_blank" rel="noopener">国税庁 令和7年度税制改正による所得税の基礎控除の見直し等について</a></li>
     <li><a href="https://www.mhlw.go.jp/stf/taiou_001_00002.html" target="_blank" rel="noopener">厚生労働省「年収の壁」への対応</a></li>
   </ul>
+
+  <div class="sec-title">ここから先は、計算では出せません</div>
+  <p>このシミュレーターで分かるのは、壁をどこで超えるかと手取りの目安までです。
+  実際には、社会保険をどちらの扶養に入れるか、保険を見直すべきか、教育資金をどう準備するか——
+  といった条件が絡み合います。<strong>そこは計算式ではなく、個別に見てもらうしかない領域です。</strong></p>
+
+  <div class="card" style="cursor:default">
+    <div class="t">お金の専門家(FP)に無料で相談する</div>
+    <div class="d" style="margin:6px 0 10px">全国約3,000名のFPから紹介を受けられるサービスです。
+    訪問でもオンラインでも相談でき、何度でも無料。担当者が合わなければ変更も無料でできます。</div>
+    <ul class="mis" style="margin:0">
+      <li>次に当てはまる方は対象外です: 世帯年収100万円以下 / 20歳未満 / 無職・学生 / 海外在住</li>
+      <li>生命保険に関する相談が前提です。損害保険だけの相談は対象外です</li>
+      <li>相談は無料ですが、面談の時間は必要です。数分で終わる形だけの面談はできません</li>
+    </ul>
+    <div class="note">📌 当サイトは特定の保険や事業者をすすめる立場にありません。
+    自分で判断しきれないときの選択肢のひとつとしてご覧ください。</div>
+    <a class="offbtn" href="https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=3776805&pid=892679912"
+       target="_blank" rel="noopener sponsored nofollow"><img
+       src="https://ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3776805&pid=892679912"
+       height="1" width="1" border="0" alt="">FPの無料相談について見る</a>
+  </div>
 
   <div class="sec-title">もっとくわしく</div>
   <a class="card" href="./nenshu-kabe.html">
