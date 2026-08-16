@@ -362,7 +362,9 @@ def build_program(p, data):
     # 制度に対応する解説記事があれば、その制度ページから導線を張る
     # (新しい記事を作るたびにリンク元を用意しないと孤立ページになる)
     ART_FOR = {"ikuji-kyugyo-kyufu": "ikukyu-jiki",
-               "iryohi-kojo": "furusato-onestop"}
+               "iryohi-kojo": "furusato-onestop",
+               "jido-fuyo-teate": "hitorioya-kojo",
+               "hitorioya-iryohi": "hitorioya-kojo"}
     _aid = ART_FOR.get(p["id"])
     if _aid:
         _a = {x["id"]: x for x in (data.get("_articles") or [])}.get(_aid)
