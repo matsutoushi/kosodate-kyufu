@@ -4,6 +4,8 @@
 標準ライブラリのみ。python build.py で site/ に出力。
 """
 import html
+import datetime
+import hashlib
 import json
 import urllib.parse
 import os
@@ -1596,11 +1598,29 @@ def main():
     pages += ["/chiiki-list.html"]
     if os.path.exists(hikaku_path):
         pages += [f"/{pg['id']}.html" for pg in json.load(open(hikaku_path, encoding="utf-8"))["pages"]]
-    today = data.get("updated", "")
+    # ページごとの最終更新日。data/lastmod.json に中身のハッシュと日付を持ち、
+    # ハッシュが変わったページだけ日付を更新する。
+    # 全ページに同じ固定日を入れると「更新されていないサイト」と読まれて再クロールが遅れ、
+    # 逆に毎回ビルド日を入れると「毎日全ページ変わる」ことになり信用されない。
+    lm_path = os.path.join(ROOT, "data", "lastmod.json")
+    lastmod = json.load(open(lm_path, encoding="utf-8")) if os.path.exists(lm_path) else {}
+    build_day = datetime.date.today().isoformat()
+    changed = 0
+    for u in pages:
+        fp = os.path.join(SITE, "index.html" if u == "/" else u.lstrip("/"))
+        if not os.path.exists(fp):
+            continue
+        h = hashlib.md5(open(fp, "rb").read()).hexdigest()
+        if lastmod.get(u, {}).get("hash") != h:
+            lastmod[u] = {"hash": h, "date": build_day}
+            changed += 1
+    with open(lm_path, "w", encoding="utf-8") as f:
+        json.dump(lastmod, f, ensure_ascii=False, indent=0, sort_keys=True)
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for u in pages:
-        sm.append(f"<url><loc>{BASE_URL}{u}</loc>" + (f"<lastmod>{today}</lastmod>" if today else "") + "</url>")
+        d = lastmod.get(u, {}).get("date", build_day)
+        sm.append(f"<url><loc>{BASE_URL}{u}</loc><lastmod>{d}</lastmod></url>")
     sm.append("</urlset>")
     with open(os.path.join(SITE, "sitemap.xml"), "w", encoding="utf-8") as f:
         f.write("\n".join(sm))
@@ -1608,7 +1628,7 @@ def main():
         f.write(f"User-agent: *\nAllow: /\n\nSitemap: {BASE_URL}/sitemap.xml\n")
 
     print(f"ビルド完了: {len(data['programs'])}制度 + トップ + しんだん → {SITE}")
-    print(f"  CNAME({DOMAIN}) / sitemap.xml({len(pages)}URL) / robots.txt")
+    print(f"  CNAME({DOMAIN}) / sitemap.xml({len(pages)}URL・更新{changed}件) / robots.txt")
     if not GA4_ID:
         print("  ※GA4未設定: build.py の GA4_ID に測定IDを入れると全ページに反映されます")
 
