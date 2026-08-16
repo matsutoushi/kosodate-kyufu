@@ -1119,6 +1119,10 @@ def build_kabe():
   </div>
 
   <div class="sec-title">もっとくわしく</div>
+  <a class="card" href="./nenmatsu-chosei.html">
+    <div class="t">📋 年末調整、子育て世帯が書き忘れるところ</div>
+    <div class="d">16歳未満の子どもは扶養控除の対象外ですが、住民税の欄には記載が必要です →</div>
+  </a>
   <a class="card" href="./nenshu-kabe.html">
     <div class="t">📊 103万の壁はもうありません。いまの壁は106万・123万・160万</div>
     <div class="d">なぜ壁が動いたのか、配偶者控除と配偶者特別控除の関係を、国税庁と厚生労働省の資料にもとづいて解説しています →</div>
