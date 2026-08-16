@@ -359,6 +359,18 @@ def build_program(p, data):
   <div class="t">{html.escape(x['title'])}</div>
   <div class="s">{html.escape(x['subtitle'])}</div>
 </a>""")
+    # 制度に対応する解説記事があれば、その制度ページから導線を張る
+    # (新しい記事を作るたびにリンク元を用意しないと孤立ページになる)
+    ART_FOR = {"ikuji-kyugyo-kyufu": "ikukyu-jiki",
+               "iryohi-kojo": "furusato-onestop"}
+    _aid = ART_FOR.get(p["id"])
+    if _aid:
+        _a = {x["id"]: x for x in (data.get("_articles") or [])}.get(_aid)
+        if _a:
+            parts.append('<div class="sec-title">あわせて読みたい</div>'
+                         f'<a class="card" href="./{_a["id"]}.html">'
+                         f'<div class="t">{_a.get("emoji","")} {html.escape(_a["title"])}</div>'
+                         f'<div class="d">{html.escape(_a["desc"][:80])}… →</div></a>')
     parts.append(related_card(p["id"], data.get("_hikaku") or []))
     parts.append("</div>")
     parts.append(footer())
