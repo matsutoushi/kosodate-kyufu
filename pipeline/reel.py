@@ -1244,97 +1244,101 @@ def render_ikukyu(T):
 
 
 def render_furusato(T):
-    """O案: 子育て世帯のふるさと納税。9〜12月に向けた仕込み。約30秒。"""
+    """O案(作り直し): 出産した年にふるさと納税の控除が消える話。
+    旧版はしくみ・上限額・育休・医療費控除・期限を並べただけで筋がなかった。
+    いちばん驚きがあり損失も大きい「ワンストップが無効になる」1本に絞る。約30秒。"""
     em = emoji_layer("🎁", 200)
-    hook = text_layer("ふるさと納税、\nまだ迷っていますか", font(82), T["ink"])
+    hook = text_layer("出産した年の\nふるさと納税は要注意", font(82), T["ink"])
+    hook2 = text_layer("控除が丸ごと消えることがあります", font(52), T["sub"])
 
-    s2a = text_layer("しくみはシンプルです", font(56), T["sub"])
-    s2b = text_layer("自己負担は 2,000円だけ", font(84), T["brand_d"])
-    s2c = text_layer("超えた分が 税金から差し引かれます", font(50), T["sub"])
-    s2d = text_layer("おむつ・お米など 必ず使うものを選ぶ", font(52), T["ink"])
+    s2a = text_layer("原因はワンストップ特例です", font(56), T["sub"])
+    s2b = text_layer("これは\n「確定申告をしない人」の制度", font(66), T["ink"])
+    s2c = text_layer("だから 確定申告をすると 全部無効になります", font(50), T["brand_d"])
 
-    s3a = text_layer("子育て世帯が誤解しがちなこと", font(54), T["sub"])
-    s3b = text_layer("16歳未満の子どもは\n上限額に影響しません", font(70), T["ink"])
-    s3c = text_layer("扶養控除の対象外だからです", font(46), T["sub"])
-    s3d = text_layer("「子が多いから上限が低い」は誤解です", font(50), T["brand_d"])
+    s3 = text_layer("出産した年に起きること", font(56), T["sub"])
+    b1 = bar_layer("医療費が10万円を超える", "出産した年は超えやすい", T)
+    b2 = bar_layer("医療費控除を申告する", "これは確定申告が必要", T)
+    b3 = bar_layer("提出済みのワンストップが", "すべて無効になる", T)
 
-    s4a = text_layer("いちばん事故が多いのは", font(56), T["sub"])
-    b1 = bar_layer("育休・産休を取った年", "上限額が大きく下がります", T)
-    b2 = bar_layer("理由", "育休給付金と出産手当金は非課税だから", T)
-    b3 = bar_layer("対処", "収入が多い側の名義で寄付する", T)
+    s4a = text_layer("たとえば 5万円寄付した場合", font(56), T["sub"])
+    s4b = text_layer("本来の自己負担は 2,000円", font(58), T["ink"])
+    s4c = text_layer("でも 無効になると", font(52), T["sub"])
+    cf = font(150)
+    s4d = text_layer("がそのまま自己負担に", font(50), T["ink"])
 
-    s5a = text_layer("出産した年は もうひとつ", font(56), T["sub"])
-    s5b = text_layer("医療費控除を申告すると\nワンストップ特例は無効", font(64), T["ink"])
-    s5c = text_layer("確定申告で寄付金控除も一緒に申告すればOK", font(48), T["sub"])
+    s5a = text_layer("でも 防ぐのは簡単です", font(58), T["ink"])
+    s5b = text_layer("確定申告のとき\n寄付金控除も一緒に申告する", font(64), T["brand_d"])
+    s5c = text_layer("それだけです。寄付金受領証明書は捨てないで", font(46), T["sub"])
 
-    s6 = text_layer("期限は2つ", font(58), T["sub"])
-    d1 = bar_layer("寄付そのもの", "12月31日まで（その年の所得で計算）", T)
-    d2 = bar_layer("ワンストップの申請書", "翌年1月10日 必着（消印有効ではありません）", T)
+    s6a = text_layer("同じことが起きる年", font(56), T["sub"])
+    w1 = bar_layer("住宅ローン控除の1年目", "この年も確定申告が必要です", T)
+    w2 = bar_layer("寄付先が6自治体以上", "ワンストップは5自治体まで", T)
 
-    c = cta_save(T, "上限額を確かめる前に", "保存 しておく")
+    c = cta_save(T, "寄付する前に", "保存 しておく")
 
     def frame(t):
         img = Image.new("RGB", (W, H), T["bg"])
         d = ImageDraw.Draw(img)
         d.rectangle([0, 0, W, 14], fill=T["brand"])
         d.rectangle([0, H - 14, W, H], fill=T["brand"])
-        if t < 3.0:
+        if t < 3.2:
             p = ease_out(min(1, t / 0.35))
             paste_center(img, em, 660, dy=int((1 - p) * 40))
-            paste_center(img, hook, 1010, dy=int((1 - p) * 55))
-        elif t < 9.2:
-            tt = t - 3.0
+            paste_center(img, hook, 1000, dy=int((1 - p) * 55))
+            if t > 1.4:
+                paste_center(img, hook2, 1250, alpha=ease_out(min(1, (t - 1.4) / 0.5)))
+        elif t < 9.4:
+            tt = t - 3.2
             paste_center(img, s2a, 560, alpha=ease_out(min(1, tt / 0.4)))
             if tt > 0.4:
                 pp = min(1, (tt - 0.4) / 0.35)
-                sc = 1.3 - 0.3 * ease_out(pp)
-                z = s2b.resize((int(s2b.width * sc), int(s2b.height * sc)))
-                paste_center(img, z, 790, alpha=pp)
-            if tt > 1.2:
-                paste_center(img, s2c, 990, alpha=ease_out(min(1, (tt - 1.2) / 0.4)))
-            if tt > 2.2:
-                paste_center(img, s2d, 1200, alpha=ease_out(min(1, (tt - 2.2) / 0.5)))
-        elif t < 16.0:
-            tt = t - 9.2
-            paste_center(img, s3a, 500, alpha=ease_out(min(1, tt / 0.4)))
-            if tt > 0.4:
-                pp = min(1, (tt - 0.4) / 0.35)
                 sc = 1.22 - 0.22 * ease_out(pp)
-                z = s3b.resize((int(s3b.width * sc), int(s3b.height * sc)))
-                paste_center(img, z, 800, alpha=pp)
-            if tt > 1.4:
-                paste_center(img, s3c, 1030, alpha=ease_out(min(1, (tt - 1.4) / 0.4)))
-            if tt > 2.4:
-                paste_center(img, s3d, 1220, alpha=ease_out(min(1, (tt - 2.4) / 0.5)))
-        elif t < 23.6:
-            tt = t - 16.0
-            paste_center(img, s4a, 430, alpha=ease_out(min(1, tt / 0.4)))
+                z = s2b.resize((int(s2b.width * sc), int(s2b.height * sc)))
+                paste_center(img, z, 830, alpha=pp)
+            if tt > 1.6:
+                paste_center(img, s2c, 1120, alpha=ease_out(min(1, (tt - 1.6) / 0.5)))
+        elif t < 17.0:
+            tt = t - 9.4
+            paste_center(img, s3, 430, alpha=ease_out(min(1, tt / 0.4)))
             for i, b in enumerate([b1, b2, b3]):
-                st = 0.4 + i * 1.2
+                st = 0.4 + i * 1.25
                 if tt < st:
                     break
                 q = ease_out(min(1, (tt - st) / 0.4))
                 paste_at(img, b, 90, 700 + i * 210, alpha=q, dx=int((1 - q) * -70))
-        elif t < 30.2:
-            tt = t - 23.6
+        elif t < 25.0:
+            tt = t - 17.0
+            paste_center(img, s4a, 460, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.5:
+                paste_center(img, s4b, 690, alpha=ease_out(min(1, (tt - 0.5) / 0.4)))
+            if tt > 1.4:
+                paste_center(img, s4c, 900, alpha=ease_out(min(1, (tt - 1.4) / 0.4)))
+                cp = ease_out(min(1, max(0.0, (tt - 1.8) / 1.8)))
+                txt = f"{int(48000 * cp):,} 円"
+                tw = d.textlength(txt, font=cf)
+                d.text(((W - tw) / 2, 980), txt, font=cf, fill=T["brand_d"])
+                if cp >= 1.0:
+                    paste_center(img, s4d, 1240, alpha=ease_out(min(1, (tt - 3.8) / 0.5)))
+        elif t < 31.4:
+            tt = t - 25.0
             paste_center(img, s5a, 580, alpha=ease_out(min(1, tt / 0.4)))
             paste_center(img, s5b, 860, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
             if tt > 1.2:
                 paste_center(img, s5c, 1160, alpha=ease_out(min(1, (tt - 1.2) / 0.5)))
-        elif t < 36.4:
-            tt = t - 30.2
-            paste_center(img, s6, 520, alpha=ease_out(min(1, tt / 0.4)))
-            for i, b in enumerate([d1, d2]):
+        elif t < 37.6:
+            tt = t - 31.4
+            paste_center(img, s6a, 500, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([w1, w2]):
                 st = 0.4 + i * 1.3
                 if tt < st:
                     break
                 q = ease_out(min(1, (tt - st) / 0.4))
-                paste_at(img, b, 90, 790 + i * 210, alpha=q, dx=int((1 - q) * -70))
+                paste_at(img, b, 90, 780 + i * 210, alpha=q, dx=int((1 - q) * -70))
         else:
-            draw_cta(img, c, t - 36.4)
+            draw_cta(img, c, t - 37.6)
         return img
 
-    return frame, 41.4
+    return frame, 42.6
 
 
 def render_shotokuseigen(T):
@@ -1971,41 +1975,39 @@ CAPTION_IKUKYU = """【育休は「いつ取るか」で手取りが変わりま
 #育休 #育児休業 #産休 #パパ育休 #社会保険料 #ワーママ #共働き #新米ママ #プレママ #家計管理"""
 
 
-CAPTION_FURUSATO = """【ふるさと納税、子育て世帯がやりがちな勘違い】
+CAPTION_FURUSATO = """【出産した年のふるさと納税、控除がゼロになることがあります】
 
-📌 上限額を調べる前に保存しておいてください。
+📌 寄付する前に保存しておいてください。
 
-しくみはシンプルで、自己負担は2,000円だけ。
-寄付額から2,000円を引いた分が、所得税と住民税から差し引かれます。
-おむつ・おしりふき・お米など「必ず使うもの」を選ぶと、家計に効きます。
+原因はワンストップ特例です。
+これは「確定申告をしない人」のための制度なので、
+あとから確定申告をすると、提出済みの申請がすべて無効になります。
 
-【勘違い①：子どもが多いと上限額が下がる】
-16歳未満の子どもは扶養控除の対象外なので、上限額に影響しません。
-児童手当が拡充されたときに、扶養控除から外れました。
-未就学児や小学生が何人いても上限は変わらないので、
-少なめに寄付している人は損をしている可能性があります。
-（16〜18歳の子がいる場合は扶養控除が効くため、上限は下がります）
+【出産した年に起きること】
+▶ 医療費が10万円を超える（出産した年は超えやすい）
+▶ 医療費控除を申告する（これは確定申告が必要）
+▶ 提出済みのワンストップがすべて無効になる
 
-【勘違い②：去年と同じ感覚で寄付する】
-育休・産休を取った年は、上限額が大きく下がります。
-育児休業給付金と出産手当金は非課税で、所得に入らないためです。
-収入がなかった年は、そもそも控除できる住民税がないので全額自己負担になります。
-→ 収入が多い側の名義で寄付してください。
+【たとえば5万円寄付した場合】
+本来の自己負担は2,000円。
+でも無効になると、48,000円がそのまま自己負担になります。
 
-【出産した年の落とし穴】
-医療費控除を申告すると、提出済みのワンストップ特例は無効になります。
-確定申告のときに、寄付金控除も一緒に申告すれば大丈夫です。
+【でも防ぐのは簡単です】
+確定申告のときに、寄付金控除も一緒に申告するだけ。
+それだけで通常どおり控除されます。
 寄付金受領証明書は捨てないでおいてください。
 
-【期限は2つ】
-▶ 寄付そのもの … 12月31日まで
-▶ ワンストップ特例の申請書 … 翌年1月10日 必着（消印有効ではありません）
+【同じことが起きる年】
+▶ 住宅ローン控除の1年目（この年も確定申告が必要）
+▶ 寄付先が6自治体以上（ワンストップは5自治体まで）
 
-上限額の考え方は、プロフィールのリンクから詳しく読めます。
+該当しそうなら、最初からワンストップを使わず確定申告でまとめるほうが確実です。
 
-※制度の内容は変わることがあります。詳しくは総務省・国税庁のページでご確認ください。個別の税務相談には応じられません。
+ふるさと納税の上限額の考え方は、プロフィールのリンクから読めます。
 
-#ふるさと納税 #ふるさと納税返礼品 #子育て #節約 #家計管理 #新米ママ #プレママ #ワーママ #ふるさと納税初心者 #知って得する"""
+※詳しくは総務省・国税庁のページでご確認ください。個別の税務相談には応じられません。
+
+#ふるさと納税 #ワンストップ特例 #医療費控除 #確定申告 #出産準備 #プレママ #新米ママ #ワーママ #家計管理 #知って得する"""
 
 
 CAPTION_SEIGEN = """【「うちは所得が高いから対象外」その思い込み、もったいないです】
