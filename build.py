@@ -1362,7 +1362,7 @@ def build_article(a, articles=()):
 {site_nav()}
 <div class="wrap body">
   <a class="back" href="./hikaku-furusato.html">← ふるさと納税の比較へ</a>
-  <div class="pr">※本ページはプロモーションを含みます</div>
+  {'<div class="pr">※本ページはプロモーションを含みます</div>' if a.get("pr", True) else ''}
   <h1 style="font-size:1.35rem;margin:.2em 0">{html.escape(a['title'])}</h1>
   <div class="s" style="margin:.2em 0 1em">最終更新: {html.escape(a.get('updated',''))}</div>
   <p>{html.escape(a['lead'])}</p>""")

@@ -388,7 +388,8 @@
    "next": "nenshu-kabe",
    "cta_href": "./ikuji-kyugyo-kyufu.html",
    "cta_text": "育児休業給付金のしくみを見る",
-   "emoji": "🗓️"
+   "emoji": "🗓️",
+   "pr": false
   }
  ]
 }

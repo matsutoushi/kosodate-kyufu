@@ -1135,6 +1135,114 @@ def render_kabe(T):
     return frame, 41.5
 
 
+def render_ikukyu(T):
+    """N案: 育休をいつ取ると得か。社会保険料免除の条件は日本年金機構の資料どおり。約30秒。"""
+    em = emoji_layer("🗓️", 200)
+    hook = text_layer("育休は「いつ取るか」で\n手取りが変わります", font(78), T["ink"])
+
+    s2 = text_layer("休んでいる間は 社会保険料が免除されます", font(52), T["sub"])
+    r1 = bar_layer("ルート①", "育休の期間に その月の末日が入っている", T)
+    r2 = bar_layer("ルート②", "開始した月に 14日以上 取っている", T)
+    s2b = text_layer("どちらかを満たせば その月はまるごと免除", font(50), T["ink"])
+
+    s3a = text_layer("ここが一番効きます", font(56), T["sub"])
+    s3b = text_layer("14日には\n土日も祝日も含まれる", font(76), T["brand_d"])
+    s3c = text_layer("日本年金機構の資料に明記されています", font(46), T["sub"])
+    s3d = text_layer("※就業した日は除きます", font(44), T["sub"])
+
+    s4 = text_layer("たとえば 年末年始をはさむと", font(56), T["sub"])
+    m1 = bar_layer("年末年始の休み", "6日（もともと給与は発生しない）", T)
+    m2 = bar_layer("その前後に足す", "8日（ここが実際の欠勤）", T)
+    m3 = bar_layer("合計", "14日 → 条件クリア", T)
+    s4b = text_layer("免除される社会保険料は", font(52), T["sub"])
+    cf = font(140)
+    s4c = text_layer("※月給30万円の場合の目安（本人負担分）", font(42), T["sub"])
+
+    s5a = text_layer("ただし 賞与は別条件です", font(58), T["ink"])
+    w1 = bar_layer("賞与の保険料", "賞与月の末日を含む 連続1か月超 が必要", T)
+    w2 = bar_layer("2022年10月から厳格化", "月末に1日だけ、という方法はもう使えません", T)
+
+    s6a = text_layer("さらに 夫婦それぞれ14日以上で", font(54), T["sub"])
+    s6b = text_layer("給付が 13% 上乗せ", font(80), T["brand_d"])
+    s6c = text_layer("出生後休業支援給付金（2025年4月〜）", font(46), T["sub"])
+
+    c = cta_save(T, "育休の時期を決める前に", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 3.0:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1010, dy=int((1 - p) * 55))
+        elif t < 9.4:
+            tt = t - 3.0
+            paste_center(img, s2, 430, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.5:
+                q = ease_out(min(1, (tt - 0.5) / 0.4))
+                paste_at(img, r1, 90, 690, alpha=q, dx=int((1 - q) * -70))
+            if tt > 1.6:
+                q = ease_out(min(1, (tt - 1.6) / 0.4))
+                paste_at(img, r2, 90, 900, alpha=q, dx=int((1 - q) * -70))
+            if tt > 2.8:
+                paste_center(img, s2b, 1160, alpha=ease_out(min(1, (tt - 2.8) / 0.5)))
+        elif t < 15.6:
+            tt = t - 9.4
+            paste_center(img, s3a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.25 - 0.25 * ease_out(pp)
+                z = s3b.resize((int(s3b.width * sc), int(s3b.height * sc)))
+                paste_center(img, z, 830, alpha=pp)
+            if tt > 1.3:
+                paste_center(img, s3c, 1080, alpha=ease_out(min(1, (tt - 1.3) / 0.4)))
+            if tt > 2.1:
+                paste_center(img, s3d, 1230, alpha=ease_out(min(1, (tt - 2.1) / 0.5)))
+        elif t < 24.4:
+            tt = t - 15.6
+            paste_center(img, s4, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([m1, m2, m3]):
+                st = 0.4 + i * 1.1
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 660 + i * 200, alpha=q, dx=int((1 - q) * -70))
+            if tt > 4.0:
+                paste_center(img, s4b, 1230, alpha=ease_out(min(1, (tt - 4.0) / 0.4)))
+                cp = ease_out(min(1, max(0.0, (tt - 4.4) / 1.8)))
+                txt = f"約 {int(42000 * cp):,} 円"
+                tw = d.textlength(txt, font=cf)
+                d.text(((W - tw) / 2, 1290), txt, font=cf, fill=T["brand_d"])
+                if cp >= 1.0:
+                    paste_center(img, s4c, 1450, alpha=ease_out(min(1, (tt - 6.4) / 0.5)))
+        elif t < 30.4:
+            tt = t - 24.4
+            paste_center(img, s5a, 520, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.5:
+                q = ease_out(min(1, (tt - 0.5) / 0.4))
+                paste_at(img, w1, 90, 790, alpha=q, dx=int((1 - q) * -70))
+            if tt > 1.7:
+                q = ease_out(min(1, (tt - 1.7) / 0.4))
+                paste_at(img, w2, 90, 1000, alpha=q, dx=int((1 - q) * -70))
+        elif t < 36.4:
+            tt = t - 30.4
+            paste_center(img, s6a, 640, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.3 - 0.3 * ease_out(pp)
+                z = s6b.resize((int(s6b.width * sc), int(s6b.height * sc)))
+                paste_center(img, z, 880, alpha=pp)
+            if tt > 1.2:
+                paste_center(img, s6c, 1120, alpha=ease_out(min(1, (tt - 1.2) / 0.5)))
+        else:
+            draw_cta(img, c, t - 36.4)
+        return img
+
+    return frame, 41.4
+
+
 # --- カバー画像 -------------------------------------------------------------
 # リールは全要素がフェードインするので1フレーム目がほぼ空白。Instagramに自動選択
 # させるとプロフィールが白紙で並ぶため、カバーは必ず別途アップロードする。
@@ -1176,6 +1284,7 @@ COVERS = {
     "kogaku-ryoyohi":  ("🏥", "帝王切開の入院費", "いくら戻る？", "高額療養費のしくみ"),
     "iryohi-kojo":     ("🧾", "出産した年は", "お金が戻ります", "医療費控除のしくみ"),
     "nenshu-kabe":     ("🧱", "103万の壁は", "もうありません", "いまの壁は106・123・160万"),
+    "ikukyu-jiki":     ("🗓️", "育休は いつ取るかで", "手取りが変わる", "14日に土日祝も含まれます"),
 }
 
 
@@ -1462,6 +1571,42 @@ CAPTION_KABE = """【103万の壁、もうありません】
 #年収の壁 #103万の壁 #106万の壁 #扶養内 #パート #ワーママ #配偶者控除 #共働き #家計管理 #知って得する"""
 
 
+CAPTION_IKUKYU = """【育休は「いつ取るか」で手取りが変わります】
+
+📌 育休の時期を決める前に保存しておいてください。
+
+休んでいる間は社会保険料が免除されます。免除されるルートは2つ。
+
+▶ 育休の期間に、その月の末日が入っている
+▶ または、開始した月に14日以上取っている
+
+どちらかを満たせば、その月の健康保険料と厚生年金保険料がまるごと免除されます。
+
+【ここが一番効きます】
+14日には、土日も祝日も含まれます。
+日本年金機構の資料にこう明記されています。
+「土日等の休日も期間に含む（就業予定日がある場合は当該就業日を除く）」
+
+つまり年末年始やゴールデンウィークをはさめば、
+実際に欠勤する日は少なくても14日に届きます。
+
+たとえば年末年始の休みが6日ある会社なら、前後に8日足すだけで条件クリア。
+もともと給与が出ない休日を含めているので、失うものは多くありません。
+
+【ただし賞与は別条件です】
+賞与の保険料が免除されるのは、賞与月の末日を含む連続1か月超を取った場合だけ。
+2022年10月から厳しくなり、月末に1日だけという方法はもう使えません。
+古い情報のまま書いているサイトが今も残っているので注意してください。
+
+【さらに夫婦それぞれ14日以上で】
+出生後休業支援給付金（2025年4月〜）により、最大28日間、給付が13%上乗せされます。
+社会保険料の免除と同じ14日なので、まとめて満たせます。
+
+※出典 日本年金機構。金額は目安です。会社の就業規則によって欠勤の扱いが異なるため、人事にご確認ください。
+
+#育休 #育児休業 #産休 #パパ育休 #社会保険料 #ワーママ #共働き #新米ママ #プレママ #家計管理"""
+
+
 REELS = [
     # (名前, テーマ, 描画関数, キャプション, 状態)
     ("018support",      "mint",     render_018,        CAPTION_018,       "投稿済み"),
@@ -1478,6 +1623,7 @@ REELS = [
     ("kogaku-ryoyohi",  "coral",    render_kogaku,     CAPTION_KOGAKU,    "未投稿"),
     ("iryohi-kojo",     "lavender", render_iryohikojo, CAPTION_IRYOHIKOJO, "未投稿"),
     ("nenshu-kabe",     "navy",     render_kabe,       CAPTION_KABE,      "未投稿"),
+    ("ikukyu-jiki",     "mint",     render_ikukyu,     CAPTION_IKUKYU,    "未投稿"),
 ]
 
 
@@ -1539,6 +1685,7 @@ def write_index():
         "kogaku-ryoyohi": "帝王切開・切迫早産と高額療養費",
         "iryohi-kojo": "出産した年の医療費控除",
         "nenshu-kabe": "年収の壁(103万はもうない)",
+        "ikukyu-jiki": "育休をいつ取ると得か",
     }
     for i, (name, _t, _f, _c, status) in enumerate(REELS, 1):
         lines.append(f"| {i:02d} | `{i:02d}-{name}/` | {NOTE.get(name, '')} | {status} |")
