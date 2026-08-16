@@ -1337,6 +1337,94 @@ def render_furusato(T):
     return frame, 41.4
 
 
+def render_shotokuseigen(T):
+    """P案: 子ども医療費の所得制限。全1,740市区町村のデータからしか作れない。約30秒。"""
+    em = emoji_layer("🏥", 200)
+    hook = text_layer("「うちは所得が高いから\n対象外」と思っていませんか", font(68), T["ink"])
+
+    s2a = text_layer("全国1,740市区町村を調べました", font(54), T["sub"])
+    s2b = text_layer("子どもの医療費助成で\n所得制限がある自治体は", font(62), T["ink"])
+    cf = font(150)
+    s2c = text_layer("市区町村だけ", font(56), T["ink"])
+
+    s3a = text_layer("割合にすると", font(56), T["sub"])
+    s3b = text_layer("2.8 %", font(150), T["brand_d"])
+    s3c = text_layer("97%以上に 所得制限はありません", font(52), T["ink"])
+
+    s4 = text_layer("内訳はこうなっています", font(56), T["sub"])
+    b1 = bar_layer("所得制限も自己負担もなし", "1,301市区町村（全体の75%）", T)
+    b2 = bar_layer("一部負担あり", "421市区町村（1回数百円など）", T)
+    b3 = bar_layer("所得制限あり", "49市区町村（全体の2.8%）", T)
+
+    s5a = text_layer("対象年齢も広がっています", font(56), T["sub"])
+    s5b = text_layer("1,575市区町村が\n18歳の年度末まで", font(68), T["brand_d"])
+    s5c = text_layer("全体の91%。9割が高校卒業まで無料です", font(48), T["sub"])
+
+    s6a = text_layer("諦める前に確認してください", font(58), T["ink"])
+    s6b = text_layer("所得で外れるのは 50に1つの自治体だけ", font(50), T["sub"])
+    s6c = text_layer("※こども家庭庁 令和7年4月1日時点", font(42), T["sub"])
+
+    c = cta_save(T, "自分の市区町村を調べる前に", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 3.0:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1020, dy=int((1 - p) * 55))
+        elif t < 9.6:
+            tt = t - 3.0
+            paste_center(img, s2a, 500, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.5:
+                paste_center(img, s2b, 760, alpha=ease_out(min(1, (tt - 0.5) / 0.4)))
+            if tt > 1.4:
+                cp = ease_out(min(1, (tt - 1.4) / 1.6))
+                txt = f"{int(49 * cp)}"
+                tw = d.textlength(txt, font=cf)
+                d.text(((W - tw) / 2, 990), txt, font=cf, fill=T["brand_d"])
+                if cp >= 1.0:
+                    paste_center(img, s2c, 1230, alpha=ease_out(min(1, (tt - 3.2) / 0.5)))
+        elif t < 15.4:
+            tt = t - 9.6
+            paste_center(img, s3a, 620, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.4 - 0.4 * ease_out(pp)
+                z = s3b.resize((int(s3b.width * sc), int(s3b.height * sc)))
+                paste_center(img, z, 850, alpha=pp)
+            if tt > 1.2:
+                paste_center(img, s3c, 1120, alpha=ease_out(min(1, (tt - 1.2) / 0.5)))
+        elif t < 23.0:
+            tt = t - 15.4
+            paste_center(img, s4, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([b1, b2, b3]):
+                st = 0.4 + i * 1.2
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 700 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 29.6:
+            tt = t - 23.0
+            paste_center(img, s5a, 580, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s5b, 860, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
+            if tt > 1.3:
+                paste_center(img, s5c, 1140, alpha=ease_out(min(1, (tt - 1.3) / 0.5)))
+        elif t < 36.0:
+            tt = t - 29.6
+            paste_center(img, s6a, 640, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s6b, 880, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
+            if tt > 1.3:
+                paste_center(img, s6c, 1120, alpha=ease_out(min(1, (tt - 1.3) / 0.5)))
+        else:
+            draw_cta(img, c, t - 36.0)
+        return img
+
+    return frame, 41.0
+
+
 # --- カバー画像 -------------------------------------------------------------
 # リールは全要素がフェードインするので1フレーム目がほぼ空白。Instagramに自動選択
 # させるとプロフィールが白紙で並ぶため、カバーは必ず別途アップロードする。
@@ -1380,6 +1468,7 @@ COVERS = {
     "nenshu-kabe":     ("🧱", "103万の壁は", "もうありません", "いまの壁は106・123・160万"),
     "ikukyu-jiki":     ("🗓️", "育休は いつ取るかで", "手取りが変わる", "14日に土日祝も含まれます"),
     "furusato":        ("🎁", "ふるさと納税", "子育て世帯の勘違い", "16歳未満は上限に影響しない"),
+    "shotoku-seigen":  ("🏥", "所得制限があるのは", "全国で49自治体", "1,740市区町村を調べました"),
 }
 
 
@@ -1739,6 +1828,40 @@ CAPTION_FURUSATO = """【ふるさと納税、子育て世帯がやりがちな�
 #ふるさと納税 #ふるさと納税返礼品 #子育て #節約 #家計管理 #新米ママ #プレママ #ワーママ #ふるさと納税初心者 #知って得する"""
 
 
+CAPTION_SEIGEN = """【「うちは所得が高いから対象外」その思い込み、もったいないです】
+
+📌 引っ越しや進学の判断材料にもなります。保存推奨。
+
+子どもの医療費助成に所得制限があると思って、
+最初から諦めている家庭が少なくありません。
+
+全国1,740市区町村のデータを調べました。
+
+【所得制限がある自治体】
+▶ 49市区町村だけ（全体の2.8%）
+
+つまり97%以上の自治体には、所得制限がありません。
+
+【内訳】
+▶ 所得制限も自己負担もなし … 1,301市区町村（75%）
+▶ 一部負担あり（1回数百円など） … 421市区町村
+▶ 所得制限あり … 49市区町村
+
+【対象年齢も広がっています】
+▶ 18歳の年度末まで … 1,575市区町村（91%）
+いまや9割の自治体が、高校卒業まで無料です。
+
+所得で対象から外れるのは、50に1つの自治体だけ。
+諦める前に、お住まいの市区町村を確認してみてください。
+
+プロフィールのリンクから、全1,740市区町村を検索できます。
+対象年齢・所得制限の有無・自己負担の有無・県内での順位まで分かります。
+
+※出典：こども家庭庁「こどもに係る医療費の助成についての調査」令和7年4月1日時点
+
+#子ども医療費 #医療費助成 #子育て #所得制限 #新米ママ #プレママ #ワーママ #引っ越し #自治体 #知って得する"""
+
+
 REELS = [
     # (名前, テーマ, 描画関数, キャプション, 状態)
     ("018support",      "mint",     render_018,        CAPTION_018,       "投稿済み"),
@@ -1757,6 +1880,7 @@ REELS = [
     ("nenshu-kabe",     "navy",     render_kabe,       CAPTION_KABE,      "投稿済み"),
     ("ikukyu-jiki",     "mint",     render_ikukyu,     CAPTION_IKUKYU,    "投稿済み"),
     ("furusato",        "coral",    render_furusato,   CAPTION_FURUSATO,  "未投稿"),
+    ("shotoku-seigen",  "navy",     render_shotokuseigen, CAPTION_SEIGEN, "未投稿"),
 ]
 
 
@@ -1820,6 +1944,7 @@ def write_index():
         "nenshu-kabe": "年収の壁(103万はもうない)",
         "ikukyu-jiki": "育休をいつ取ると得か",
         "furusato": "ふるさと納税の勘違い(子育て世帯)",
+        "shotoku-seigen": "医療費助成の所得制限は49自治体だけ",
     }
     for i, (name, _t, _f, _c, status) in enumerate(REELS, 1):
         lines.append(f"| {i:02d} | `{i:02d}-{name}/` | {NOTE.get(name, '')} | {status} |")
