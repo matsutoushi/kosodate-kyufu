@@ -263,6 +263,15 @@ def build_index(data):
   <div class="t">{p.get('emoji','')} {html.escape(p.get('nav_title', p['title']))}</div>
   <div class="d">{html.escape(p['lead'][:64])}… →</div>
 </a>""")
+    # 解説記事。トップから記事への導線が無いと、記事が孤立してクロールされにくい。
+    arts = data.get("_articles") or []
+    if arts:
+        parts.append('<div class="sec-title">くわしく読む</div>')
+        for a in arts:
+            parts.append(f"""<a class="card" href="./{a['id']}.html">
+  <div class="t">{a.get('emoji','')} {html.escape(a['title'])}</div>
+  <div class="d">{html.escape(a['desc'][:76])}… →</div>
+</a>""")
     parts.append("</div>")
     parts.append("""<script>
 const pq = document.getElementById('pq');
