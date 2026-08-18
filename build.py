@@ -803,8 +803,9 @@ def build_city(c, iry_map, taiki_map, rank_map):
     rank = rank_map.get(key)
     name = f'{c["pref"]}{c["city"]}'
 
-    parts = [head(f"{name}の子育て支援・もらえるお金｜{SITE_NAME}",
-                  f"{name}の子ども医療費助成、保育園の待機児童、市独自の給付金・助成をまとめました。",
+    parts = [head(f"{name}の子育て支援・助成金・補助金｜{SITE_NAME}",
+                  f"{name}の子ども医療費助成(子供医療費)、保育園の待機児童、"
+                  f"市独自の給付金・助成金・補助金・支援金をまとめました。",
                   f"/{c['id']}.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
@@ -812,7 +813,10 @@ def build_city(c, iry_map, taiki_map, rank_map):
 <div class="wrap body">
   <a class="back" href="./chiiki.html">← 地域で調べる</a>
   <h1 style="font-size:1.4rem;margin:.2em 0">{html.escape(name)}の子育て支援</h1>
-  <p>{html.escape(c['lead'])}</p>""")
+  <p>{html.escape(c['lead'])}</p>
+  <p style="font-size:.92rem;color:var(--sub)">{html.escape(c["city"])}の子育て支援は、
+  「助成金」「補助金」「支援金」「給付金」と呼び方がわかれています。
+  名前がちがうだけで同じ制度のこともあるので、このページではまとめて確認できるようにしました。</p>""")
 
     if med:
         parts.append(f"""
@@ -821,7 +825,9 @@ def build_city(c, iry_map, taiki_map, rank_map):
   <div style="margin:8px 0">
     {'<span class="pill p-warn">所得制限あり</span>' if med['limit_out'] else '<span class="pill p-good">所得制限なし</span>'}
     {'<span class="pill p-warn">自己負担あり</span>' if med['copay_out'] else '<span class="pill p-good">自己負担なし</span>'}
-  </div>""")
+  </div>
+  <p style="font-size:.86rem;color:var(--sub)">自治体によって
+  「子ども医療費助成」「子供医療費助成」「乳幼児医療費助成」と名前がちがいますが、同じ制度です。</p>""")
         if rank:
             parts.append(f'<p style="font-size:.9rem;color:var(--sub)">県内の手厚さ: {html.escape(c["pref"])}内 {rank[1]}市区町村中 <strong>{rank[0]}位</strong></p>')
 
