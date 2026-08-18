@@ -295,6 +295,11 @@ pq && pq.addEventListener('input', () => {
 
 
 def build_program(p, data):
+    # 「いつ振り込まれるか」は制度名と並んでよく検索されるのに、どの解説にも書いていない。
+    # 対象・申請先と同じ高さに置く。
+    e = p.get("_enrich") or {}
+    timing = (f'<dt>いつ受け取れる?</dt><dd>{html.escape(e["timing"])}</dd>'
+              if e.get("timing") else "")
     parts = [head(f"{p['title']}｜{SITE_NAME}", p["summary"][:100], f"/{p['id']}.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
@@ -308,9 +313,8 @@ def build_program(p, data):
   <dl>
     <dt>対象になる人</dt><dd>{html.escape(p['target'])}</dd>
     <dt>申請先・方法</dt><dd>{html.escape(p['how'])}</dd>
-    <dt>申請の期限</dt><dd>{html.escape(p['deadline'])}</dd>
+    <dt>申請の期限</dt><dd>{html.escape(p['deadline'])}</dd>{timing}
   </dl>""")
-    e = p.get("_enrich") or {}
     if e.get("why"):
         parts.append(f'<div class="sec-title">なぜこの制度があるの?</div><div class="why">{html.escape(e["why"])}</div>')
     if e.get("detail"):
