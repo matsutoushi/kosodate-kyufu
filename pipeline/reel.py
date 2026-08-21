@@ -1617,6 +1617,285 @@ def render_hitorioya(T):
 COVER_SAFE = (500, 1400)
 
 
+def render_kogaku2026(T):
+    """T案: 高額療養費の上限が2026年8月から上がった話。
+    伸びた2本(医療費控除・ふるさと納税)はどちらも税金の話で、子育て世帯以外にも届いた。
+    これも同じく全世代が対象。しかも今月施行で、まだほとんど知られていない。約30秒。"""
+    em = emoji_layer("🏥", 200)
+    hook = text_layer("入院したときの上限額が\n今月から上がりました", font(78), T["ink"])
+    hook2 = text_layer("2026年8月の診療分から", font(52), T["sub"])
+
+    s2a = text_layer("高額療養費という制度です", font(56), T["sub"])
+    s2b = text_layer("1か月の医療費が\n上限を超えたら戻ってくる", font(66), T["ink"])
+    s2c = text_layer("その上限が 引き上げられました", font(50), T["brand_d"])
+
+    s3 = text_layer("どれくらい変わったか", font(56), T["sub"])
+    b1 = bar_layer("医療費が100万円かかった月", "窓口ではいったん30万円払います", T)
+    b2 = bar_layer("これまでの上限 87,430円", "超えた分は戻ってきました", T)
+    b3 = bar_layer("今月からの上限 92,940円", "戻る額が その分だけ減ります", T)
+
+    s4a = text_layer("差額はいくらか", font(56), T["sub"])
+    cf = font(150)
+    s4b = text_layer("1回の入院で 増える負担です", font(50), T["ink"])
+    s4c = text_layer("標準報酬月額28〜50万円の場合", font(42), T["sub"])
+
+    s5a = text_layer("でも 増えただけではありません", font(54), T["ink"])
+    s5b = text_layer("「年間上限」が\n新しくできました", font(66), T["brand_d"])
+    s5c = text_layer("8月から翌年7月の合計が上限に達したら\nその年はもう払わなくていい", font(44), T["sub"])
+
+    s6a = text_layer("知っておくと損しないこと", font(56), T["sub"])
+    w1 = bar_layer("マイナ保険証を窓口で出す", "支払いが最初から上限額までになります", T)
+    w2 = bar_layer("あとから申請すると3か月以上", "その間は立て替えたままです", T)
+
+    c = cta_save(T, "入院が決まる前に", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 3.2:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1000, dy=int((1 - p) * 55))
+            if t > 1.4:
+                paste_center(img, hook2, 1260, alpha=ease_out(min(1, (t - 1.4) / 0.5)))
+        elif t < 9.4:
+            tt = t - 3.2
+            paste_center(img, s2a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.22 - 0.22 * ease_out(pp)
+                z = s2b.resize((int(s2b.width * sc), int(s2b.height * sc)))
+                paste_center(img, z, 840, alpha=pp)
+            if tt > 1.6:
+                paste_center(img, s2c, 1140, alpha=ease_out(min(1, (tt - 1.6) / 0.5)))
+        elif t < 17.0:
+            tt = t - 9.4
+            paste_center(img, s3, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([b1, b2, b3]):
+                st = 0.4 + i * 1.25
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 700 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 25.0:
+            tt = t - 17.0
+            paste_center(img, s4a, 520, alpha=ease_out(min(1, tt / 0.4)))
+            cp = ease_out(min(1, max(0.0, (tt - 0.6) / 1.8)))
+            txt = f"＋{int(5510 * cp):,} 円"
+            tw = d.textlength(txt, font=cf)
+            d.text(((W - tw) / 2, 830), txt, font=cf, fill=T["brand_d"])
+            if cp >= 1.0:
+                paste_center(img, s4b, 1120, alpha=ease_out(min(1, (tt - 2.6) / 0.5)))
+                paste_center(img, s4c, 1260, alpha=ease_out(min(1, (tt - 3.0) / 0.5)))
+        elif t < 31.4:
+            tt = t - 25.0
+            paste_center(img, s5a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s5b, 850, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
+            if tt > 1.2:
+                paste_center(img, s5c, 1180, alpha=ease_out(min(1, (tt - 1.2) / 0.5)))
+        elif t < 37.6:
+            tt = t - 31.4
+            paste_center(img, s6a, 500, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([w1, w2]):
+                st = 0.4 + i * 1.3
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 780 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        else:
+            draw_cta(img, c, t - 37.6)
+        return img
+
+    return frame, 42.6
+
+
+def render_kokofurikomi(T):
+    """U案: 高校無償化のお金は本人の口座に振り込まれない(学校が代理受領する)。
+    サジェストで「高校無償化 いつ振り込まれる」が上位に出ており、誤解が明確にある。約30秒。"""
+    em = emoji_layer("🎓", 200)
+    hook = text_layer("高校無償化のお金は\nあなたの口座に入りません", font(76), T["ink"])
+    hook2 = text_layer("でも 損はしていません", font(52), T["sub"])
+
+    s2a = text_layer("就学支援金という制度です", font(56), T["sub"])
+    s2b = text_layer("学校が あなたの代わりに\n受け取ります", font(66), T["ink"])
+    s2c = text_layer("そのぶん 授業料の請求が減ります", font(50), T["brand_d"])
+
+    s3 = text_layer("だから こう見えます", font(56), T["sub"])
+    b1 = bar_layer("通帳には何も入りません", "振込を待っても永遠に来ません", T)
+    b2 = bar_layer("授業料の請求が減る", "または請求そのものが来ない", T)
+    b3 = bar_layer("お金が動いて見えない", "これで正常です", T)
+
+    s4a = text_layer("ただし 落とし穴があります", font(56), T["sub"])
+    s4b = text_layer("申請しないと\n支給されません", font(74), T["brand_d"])
+    s4c = text_layer("自動では始まりません", font(50), T["ink"])
+
+    s5a = text_layer("やることは2つだけ", font(58), T["ink"])
+    w1 = bar_layer("入学したら 学校の案内を出す", "オンライン申請が中心です", T)
+    w2 = bar_layer("年に1回 継続の手続き", "出し忘れると 支給が止まります", T)
+
+    s6a = text_layer("対象になる人", font(56), T["sub"])
+    s6b = text_layer("所得制限は ありません", font(72), T["ink"])
+    s6c = text_layer("2026年度から全世帯が対象です。\n私立の上限額は都道府県の上乗せで変わります", font(44), T["sub"])
+
+    c = cta_save(T, "入学の前に", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 3.2:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1000, dy=int((1 - p) * 55))
+            if t > 1.4:
+                paste_center(img, hook2, 1260, alpha=ease_out(min(1, (t - 1.4) / 0.5)))
+        elif t < 9.4:
+            tt = t - 3.2
+            paste_center(img, s2a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.22 - 0.22 * ease_out(pp)
+                z = s2b.resize((int(s2b.width * sc), int(s2b.height * sc)))
+                paste_center(img, z, 840, alpha=pp)
+            if tt > 1.6:
+                paste_center(img, s2c, 1140, alpha=ease_out(min(1, (tt - 1.6) / 0.5)))
+        elif t < 17.0:
+            tt = t - 9.4
+            paste_center(img, s3, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([b1, b2, b3]):
+                st = 0.4 + i * 1.25
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 700 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 24.0:
+            tt = t - 17.0
+            paste_center(img, s4a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.5:
+                pp = min(1, (tt - 0.5) / 0.35)
+                sc = 1.25 - 0.25 * ease_out(pp)
+                z = s4b.resize((int(s4b.width * sc), int(s4b.height * sc)))
+                paste_center(img, z, 880, alpha=pp)
+            if tt > 1.8:
+                paste_center(img, s4c, 1180, alpha=ease_out(min(1, (tt - 1.8) / 0.5)))
+        elif t < 31.4:
+            tt = t - 24.0
+            paste_center(img, s5a, 500, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([w1, w2]):
+                st = 0.4 + i * 1.3
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 780 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 37.6:
+            tt = t - 31.4
+            paste_center(img, s6a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s6b, 830, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
+            if tt > 1.2:
+                paste_center(img, s6c, 1150, alpha=ease_out(min(1, (tt - 1.2) / 0.5)))
+        else:
+            draw_cta(img, c, t - 37.6)
+        return img
+
+    return frame, 42.6
+
+
+def render_jidoshikyubi(T):
+    """V案: 児童手当は毎月は振り込まれない(偶数月に2か月分)。
+    「児童手当 支給日」はサジェストで最上位級のワードなのに、どの解説にも書いていない。約30秒。"""
+    em = emoji_layer("🗓️", 200)
+    hook = text_layer("児童手当は\n毎月は振り込まれません", font(80), T["ink"])
+    hook2 = text_layer("入金がないと不安になる人が多い話です", font(48), T["sub"])
+
+    s2a = text_layer("正しくは こうです", font(56), T["sub"])
+    s2b = text_layer("年6回 偶数月に\n2か月分ずつ", font(70), T["ink"])
+    s2c = text_layer("2・4・6・8・10・12月", font(56), T["brand_d"])
+
+    s3 = text_layer("たとえば こうなります", font(56), T["sub"])
+    b1 = bar_layer("2月に 12月分と1月分", "2か月分がまとめて入ります", T)
+    b2 = bar_layer("4月に 2月分と3月分", "以降も同じリズムで続きます", T)
+    b3 = bar_layer("月内の何日かは自治体しだい", "10日・15日など ばらつきます", T)
+
+    s4a = text_layer("1回に入る額は(0〜2歳)", font(56), T["sub"])
+    cf = font(150)
+    s4b = text_layer("月15,000円 × 2か月分", font(54), T["ink"])
+    s4c = text_layer("3歳〜高校生は月10,000円、第3子以降は月30,000円", font(40), T["sub"])
+
+    s5a = text_layer("2024年10月から変わりました", font(54), T["ink"])
+    w1 = bar_layer("高校生年代まで対象に", "以前は中学生まででした", T)
+    w2 = bar_layer("所得制限が撤廃", "年収に関係なく受け取れます", T)
+
+    s6a = text_layer("ここだけは 気をつけて", font(56), T["sub"])
+    s6b = text_layer("引っ越し・出産は\n15日以内に手続き", font(68), T["brand_d"])
+    s6c = text_layer("遅れた分は さかのぼって受け取れません", font(46), T["sub"])
+
+    c = cta_save(T, "次の支給月の前に", "保存 しておく")
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 3.2:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 1000, dy=int((1 - p) * 55))
+            if t > 1.4:
+                paste_center(img, hook2, 1260, alpha=ease_out(min(1, (t - 1.4) / 0.5)))
+        elif t < 9.4:
+            tt = t - 3.2
+            paste_center(img, s2a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            if tt > 0.4:
+                pp = min(1, (tt - 0.4) / 0.35)
+                sc = 1.22 - 0.22 * ease_out(pp)
+                z = s2b.resize((int(s2b.width * sc), int(s2b.height * sc)))
+                paste_center(img, z, 850, alpha=pp)
+            if tt > 1.6:
+                paste_center(img, s2c, 1160, alpha=ease_out(min(1, (tt - 1.6) / 0.5)))
+        elif t < 17.0:
+            tt = t - 9.4
+            paste_center(img, s3, 430, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([b1, b2, b3]):
+                st = 0.4 + i * 1.25
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 700 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 25.0:
+            tt = t - 17.0
+            paste_center(img, s4a, 520, alpha=ease_out(min(1, tt / 0.4)))
+            cp = ease_out(min(1, max(0.0, (tt - 0.6) / 1.8)))
+            txt = f"{int(30000 * cp):,} 円"
+            tw = d.textlength(txt, font=cf)
+            d.text(((W - tw) / 2, 830), txt, font=cf, fill=T["brand_d"])
+            if cp >= 1.0:
+                paste_center(img, s4b, 1120, alpha=ease_out(min(1, (tt - 2.6) / 0.5)))
+                paste_center(img, s4c, 1260, alpha=ease_out(min(1, (tt - 3.0) / 0.5)))
+        elif t < 31.4:
+            tt = t - 25.0
+            paste_center(img, s5a, 500, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([w1, w2]):
+                st = 0.4 + i * 1.3
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 780 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 37.6:
+            tt = t - 31.4
+            paste_center(img, s6a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s6b, 850, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
+            if tt > 1.2:
+                paste_center(img, s6c, 1180, alpha=ease_out(min(1, (tt - 1.2) / 0.5)))
+        else:
+            draw_cta(img, c, t - 37.6)
+        return img
+
+    return frame, 42.6
+
+
 def build_cover(T, emoji, line1, line2, tag):
     img = Image.new("RGB", (W, H), T["bg"])
     d = ImageDraw.Draw(img)
@@ -1653,6 +1932,9 @@ COVERS = {
     "shotoku-seigen":  ("🏥", "所得制限があるのは", "全国で49自治体", "1,740市区町村を調べました"),
     "fuyo-kojo":       ("📋", "子どもが何人いても", "扶養控除は増えない", "16歳未満は対象外です"),
     "hitorioya":       ("🌱", "ひとり親が", "受け取れるお金", "手当・助成・控除をまとめて"),
+    "kogaku-2026":     ("🏥", "入院の上限額が", "今月 上がりました", "2026年8月から・年間上限も新設"),
+    "koko-furikomi":   ("🎓", "高校無償化のお金は", "口座に入りません", "学校が代わりに受け取ります"),
+    "jido-shikyubi":   ("🗓️", "児童手当は", "毎月もらえません", "偶数月に2か月分ずつ"),
 }
 
 
@@ -2106,6 +2388,104 @@ CAPTION_HITORIOYA = """【ひとり親が受け取れるお金を整理しまし
 #ひとり親 #シングルマザー #シングルファザー #児童扶養手当 #ひとり親控除 #子育て #給付金 #家計管理 #知って得する #ひとり親家庭"""
 
 
+CAPTION_KOGAKU2026 = """【入院の上限額、今月から上がりました】
+
+📌 いつ使うか分からない制度なので、保存しておくと安心です。
+
+高額療養費は、1か月の医療費の自己負担が上限を超えたら、超えた分が戻ってくる制度です。
+この上限額が【2026年8月の診療分から】引き上げられました。
+
+【どれくらい変わったか】
+標準報酬月額28〜50万円(区分ウ)の場合
+▶ これまで:80,100円＋(総医療費−267,000円)×1%
+▶ 今月から:85,800円＋(総医療費−286,000円)×1%
+
+医療費が100万円かかった月なら
+▶ これまでの上限 87,430円
+▶ 今月からの上限 92,940円
+差は5,510円です。
+
+【増えただけではありません】
+今回、あわせて【年間上限】が新しくできました。
+8月から翌年7月までの1年間で自己負担の合計が上限に達すると、その年はそれ以降の支払いが不要になります。
+区分ウなら年間53万円。毎月の上限には届かないけれど通院が長く続く、というケースを救う仕組みです。
+4回目から下がる「多数回該当」の金額は据え置きです。
+
+【知っておくと損しないこと】
+▶ マイナ保険証を窓口で出せば、支払いが最初から上限額までで済みます
+▶ あとから申請すると、支給まで診療月から3か月以上かかります
+▶ 出産でも、帝王切開や切迫早産の入院は保険診療なので対象です
+
+─────────
+金額は所得区分で変わります。70歳以上は別の区分です。
+出典:協会けんぽ／厚生労働省。申請前に加入先の健康保険でご確認ください。
+
+#高額療養費 #医療費 #入院 #帝王切開 #切迫早産 #マイナ保険証 #お金の勉強 #家計管理 #子育て #制度改正
+"""
+
+CAPTION_KOKOFURIKOMI = """【高校無償化のお金、口座には入りません】
+
+📌 高校生の親になる前に、保存しておいてください。
+
+「無償化されたのに振り込まれない」という声をよく見ますが、これは正常です。
+
+【しくみ】
+高等学校等就学支援金は、学校が生徒本人に代わって受け取り、授業料と相殺する形になっています。
+だから保護者の口座にお金が入ることはありません。そのぶん授業料の請求が減る(または請求が来ない)というだけです。
+
+【落とし穴】
+自動では始まりません。申請しないと支給されません。
+▶ 入学したら、学校から案内が来ます。必ず提出してください
+▶ 年に1回、継続のための手続きがあります。出し忘れると支給が止まります
+
+【対象】
+所得制限はありません。2026年度から全世帯が対象です。
+(公立の支援は2025年度に暫定措置として所得制限が実質撤廃され、2026年度の改正で本格的に撤廃、私立の加算額も引き上げられました)
+私立の上限額や都道府県の上乗せ補助は地域によって違うので、通う学校と自治体で確認してください。
+
+─────────
+「振り込まれない＝もらえていない」ではありません。
+通帳ではなく、授業料の請求額を見てください📌
+
+出典:文部科学省。詳しい条件は学校・都道府県でご確認ください。
+
+#高校無償化 #就学支援金 #高校生 #教育費 #学費 #子育て #お金の勉強 #家計管理 #中学生ママ #高校受験
+"""
+
+CAPTION_JIDOSHIKYUBI = """【児童手当、毎月は振り込まれません】
+
+📌 「今月入ってない」と不安になる前に保存を。
+
+児童手当は毎月ではなく、【年6回・偶数月に2か月分ずつ】まとめて振り込まれます。
+
+【支給の月】
+2月・4月・6月・8月・10月・12月
+それぞれ、その前の2か月分が入ります。
+▶ 2月に 12月分と1月分
+▶ 4月に 2月分と3月分
+月内の何日に入るかは市区町村によって違います(10日・15日などばらつきます)。
+
+【1回に入る額】
+0〜2歳:月15,000円 → 1回30,000円
+3歳〜高校生年代:月10,000円 → 1回20,000円
+第3子以降:年齢を問わず月30,000円 → 1回60,000円
+
+【2024年10月から変わったこと】
+▶ 対象が高校生年代まで広がりました(以前は中学生まで)
+▶ 所得制限が撤廃され、年収に関係なく受け取れます
+▶ 支払いが年3回から年6回になりました
+
+【ここだけは気をつけて】
+出生・転入などの手続きは【翌日から15日以内】が原則です。
+遅れると、その分はさかのぼって受け取れません。引っ越しのときが特に危ないです。
+
+─────────
+出典:こども家庭庁。支給日や手続きの詳細はお住まいの市区町村でご確認ください。
+
+#児童手当 #支給日 #子育て #育児 #新生児 #ワンオペ育児 #お金の勉強 #家計管理 #子育てママ #プレママ
+"""
+
+
 REELS = [
     # (名前, テーマ, 描画関数, キャプション, 状態)
     ("018support",      "mint",     render_018,        CAPTION_018,       "投稿済み"),
@@ -2127,6 +2507,9 @@ REELS = [
     ("shotoku-seigen",  "navy",     render_shotokuseigen, CAPTION_SEIGEN, "未投稿"),
     ("fuyo-kojo",       "lavender", render_fuyokojo,   CAPTION_FUYO,      "未投稿"),
     ("hitorioya",       "peach",    render_hitorioya,  CAPTION_HITORIOYA, "未投稿"),
+    ("kogaku-2026",     "navy",     render_kogaku2026,   CAPTION_KOGAKU2026,   "未投稿"),
+    ("koko-furikomi",   "peach",    render_kokofurikomi, CAPTION_KOKOFURIKOMI, "未投稿"),
+    ("jido-shikyubi",   "mint",     render_jidoshikyubi, CAPTION_JIDOSHIKYUBI, "未投稿"),
 ]
 
 
