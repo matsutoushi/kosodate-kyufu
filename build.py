@@ -145,6 +145,11 @@ footer a{color:var(--sub)}
 .body p{margin:.9em 0}
 .why{background:#fff8f4;border-radius:12px;padding:14px 16px;font-size:.92rem;color:#6b5348}
 .case{background:#f2faf8;border:1px solid #d6ece7;border-radius:12px;padding:14px 16px;margin:14px 0}
+.tbwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0}
+.tb{border-collapse:collapse;width:100%;min-width:520px;font-size:.86rem}
+.tb th,.tb td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.tb th{background:#fff5ef;font-weight:800;white-space:nowrap}
+.tb tbody tr:nth-child(even){background:#fffaf7}
 .case .h{font-weight:800;color:#2f7f74;font-size:.86rem;margin-bottom:4px}
 ul.tips,ul.mis{padding-left:0;list-style:none;margin:8px 0}
 ul.tips li,ul.mis li{position:relative;padding:8px 0 8px 30px;border-bottom:1px dashed var(--line);font-size:.93rem}
@@ -322,6 +327,19 @@ def build_program(p, data):
         for para in e["detail"]:
             parts.append(f"<p>{html.escape(para)}</p>")
         parts.append("</div>")
+    if e.get("table"):
+        tb = e["table"]
+        parts.append(f'<div class="sec-title">{html.escape(tb["title"])}</div>')
+        if tb.get("lead"):
+            parts.append(f'<p>{html.escape(tb["lead"])}</p>')
+        parts.append('<div class="tbwrap"><table class="tb"><thead><tr>')
+        parts.extend(f"<th>{html.escape(h)}</th>" for h in tb["head"])
+        parts.append("</tr></thead><tbody>")
+        for row in tb["rows"]:
+            parts.append("<tr>" + "".join(f"<td>{html.escape(c)}</td>" for c in row) + "</tr>")
+        parts.append("</tbody></table></div>")
+        if tb.get("note"):
+            parts.append(f'<div class="note">📌 {html.escape(tb["note"])}</div>')
     if e.get("case"):
         parts.append(f'<div class="case"><div class="h">💡 モデルケース</div>{html.escape(e["case"])}</div>')
     if e.get("prefectures"):
