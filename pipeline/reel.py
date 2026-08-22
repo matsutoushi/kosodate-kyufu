@@ -1913,6 +1913,91 @@ def render_jidoshikyubi(T):
     return frame, 42.6
 
 
+def row_layer(no, text, note, T, w=920, h=112):
+    """一覧用の1行。8行を1画面に収めるため bar_layer より薄くする。"""
+    lay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(lay)
+    d.rounded_rectangle([0, 0, w, h], radius=20, fill=T["soft"])
+    d.rounded_rectangle([0, 0, 74, h], radius=20, fill=T["brand"])
+    d.rounded_rectangle([54, 0, 74, h], radius=0, fill=T["brand"])
+    nf = font(46)
+    nw = d.textlength(str(no), font=nf)
+    d.text(((74 - nw) / 2, (h - 56) / 2), str(no), font=nf, fill="#FFFFFF")
+    d.text((96, 16), text, font=font(44), fill=T["ink"])
+    d.text((96, 66), note, font=font(30), fill=T["sub"])
+    return lay
+
+
+MATOME_ITEMS = [
+    ("出産した年は確定申告", "医療費控除。会社の年末調整ではできません"),
+    ("ワンストップは無効になる", "確定申告するとふるさと納税の控除が消えます"),
+    ("児童手当は毎月ではない", "偶数月に年6回、2か月分ずつ"),
+    ("高校無償化は口座に入らない", "学校が代理で受け取り、授業料と相殺されます"),
+    ("保育無償化は誕生日からでない", "満3歳になった後の4月1日から(幼稚園は満3歳)"),
+    ("入院の上限額が上がった", "高額療養費。2026年8月の診療分から"),
+    ("16歳未満に扶養控除はない", "子が何人いてもふるさと納税の上限は変わりません"),
+    ("育休給付は最初の入金が遅い", "2か月分ずつの申請なので、しばらく無収入期間"),
+]
+
+
+def render_matome(T):
+    """W案: 「知らないと損する」8つを1画面にまとめた保存版。
+    これまでのリスト系4本(155/159/162/297ビュー)は項目を順に出すだけで、
+    全体が同時に映るフレームが1枚も無かった。スクショ1枚で完結しないので保存の価値が出ない。
+    冒頭は動かして静止画と判定されるのを避け、後半で全8項目を長く出しきる。約31秒。"""
+    em = emoji_layer("📌", 190)
+    hook = text_layer("知らないと損する\n子育てのお金", font(84), T["ink"])
+    hook2 = text_layer("8つ、まとめました", font(56), T["sub"])
+    hook3 = text_layer("この1枚を保存しておいてください", font(44), T["brand_d"])
+
+    rows = [row_layer(i + 1, t, n, T) for i, (t, n) in enumerate(MATOME_ITEMS)]
+    title = text_layer("知らないと損する 子育てのお金 8", font(52), T["ink"])
+    foot = text_layer("こそだて給付ナビ", font(38), T["sub"])
+
+    c = cta_save(T, "あとで見返せるように", "保存 しておく")
+
+    Y0, DY = 372, 125
+
+    def draw_list(img, shown, alpha_last=1.0):
+        """上から shown 行を描く。最後の1行だけ alpha を変えられる。"""
+        paste_center(img, title, 252)
+        for i in range(shown):
+            a = alpha_last if i == shown - 1 else 1.0
+            paste_at(img, rows[i], 80, Y0 + i * DY, alpha=a,
+                     dx=int((1 - a) * -60))
+        paste_center(img, foot, 1420)
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), T["bg"])
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, 0, W, 14], fill=T["brand"])
+        d.rectangle([0, H - 14, W, H], fill=T["brand"])
+        if t < 4.0:
+            p = ease_out(min(1, t / 0.35))
+            paste_center(img, em, 660, dy=int((1 - p) * 40))
+            paste_center(img, hook, 980, dy=int((1 - p) * 55))
+            if t > 1.3:
+                paste_center(img, hook2, 1230, alpha=ease_out(min(1, (t - 1.3) / 0.45)))
+            if t > 2.3:
+                paste_center(img, hook3, 1360, alpha=ease_out(min(1, (t - 2.3) / 0.45)))
+        elif t < 16.0:
+            # 1行ずつ積み上げる。動きを保ちつつ、最後には全部が並ぶ。
+            tt = t - 4.0
+            shown = min(len(rows), int(tt / 1.45) + 1)
+            a = ease_out(min(1, (tt - (shown - 1) * 1.45) / 0.45))
+            draw_list(img, shown, alpha_last=a)
+        elif t < 36.0:
+            # 保存版フレーム。全8項目を静止で長く出す(ここをスクショされる)。
+            draw_list(img, len(rows))
+            # polish() の Ken Burns が全編に効くので、ここで動きを足す必要はない。
+            # 上端は進行バーに隠れるため、装飾を置いても見えない。
+        else:
+            draw_cta(img, c, t - 36.0)
+        return img
+
+    return frame, 42.0
+
+
 def build_cover(T, emoji, line1, line2, tag):
     img = Image.new("RGB", (W, H), T["bg"])
     d = ImageDraw.Draw(img)
@@ -1952,6 +2037,7 @@ COVERS = {
     "kogaku-2026":     ("🏥", "入院の上限額が", "今月 上がりました", "2026年8月から・年間上限も新設"),
     "koko-furikomi":   ("🎓", "高校無償化のお金は", "口座に入りません", "学校が代わりに受け取ります"),
     "jido-shikyubi":   ("🗓️", "児童手当は", "毎月もらえません", "偶数月に2か月分ずつ"),
+    "matome-8":        ("📌", "知らないと損する", "子育てのお金 8", "保存版・1枚にまとめました"),
 }
 
 
@@ -2513,6 +2599,44 @@ CAPTION_JIDOSHIKYUBI = """【児童手当、毎月は振り込まれません】
 """
 
 
+CAPTION_MATOME = """【知らないと損する子育てのお金 8つ】
+
+📌 この投稿を保存しておいてください。必要になるのは、たいてい急なタイミングです。
+
+①【出産した年は確定申告】
+医療費が年10万円を超えたら医療費控除。出産した年は超えやすいです。会社の年末調整ではできません。5年さかのぼれます。
+
+②【ワンストップは確定申告で無効になる】
+ふるさと納税のワンストップ特例は「確定申告をしない人」の制度です。医療費控除を申告すると、提出済みのワンストップは全部無効に。確定申告で寄付金控除も一緒に申告すれば大丈夫です。
+
+③【児童手当は毎月ではない】
+偶数月(2・4・6・8・10・12月)に年6回、2か月分ずつまとめて振り込まれます。月内の何日かは市区町村によって違います。
+
+④【高校無償化のお金は口座に入らない】
+就学支援金は学校が代わりに受け取り、授業料と相殺されます。通帳ではなく、授業料の請求額を見てください。申請しないと支給されません。
+
+⑤【保育無償化は誕生日からではない】
+「満3歳になった後の最初の4月1日」からです。5月生まれなら翌年4月から。幼稚園だけは満3歳から対象です。
+
+⑥【入院の自己負担の上限が上がった】
+高額療養費が2026年8月の診療分から見直されました。標準報酬月額28〜50万円なら、医療費100万円の月で87,430円→92,940円。あわせて「年間上限」が新設されています。
+
+⑦【16歳未満に扶養控除はない】
+児童手当の拡充のときに対象から外れました。子どもが何人いても、ふるさと納税の上限額は変わりません。少なめに寄付していると損をします。
+
+⑧【育休給付金は最初の入金が遅い】
+2か月分ずつまとめて申請する仕組みなので、育休に入ってしばらく入金がない期間があります。産休・育休に入る前に、生活費の見通しを立てておいてください。
+
+─────────
+どれも「知っていれば防げた」ものばかりです。
+必要になったときに探せるよう、保存しておくと安心です📌
+
+※金額・条件は所得や自治体によって異なります。出典:こども家庭庁／厚生労働省／文部科学省／国税庁／協会けんぽ。申請前に各公式ページとお住まいの市区町村でご確認ください。
+
+#子育て #育児 #出産準備 #プレママ #新生児 #ワンオペ育児 #医療費控除 #ふるさと納税 #児童手当 #高校無償化 #保育園 #育休 #お金の勉強 #家計管理 #知らないと損
+"""
+
+
 REELS = [
     # (名前, テーマ, 描画関数, キャプション, 状態)
     ("018support",      "mint",     render_018,        CAPTION_018,       "投稿済み"),
@@ -2537,6 +2661,7 @@ REELS = [
     ("kogaku-2026",     "navy",     render_kogaku2026,   CAPTION_KOGAKU2026,   "未投稿"),
     ("koko-furikomi",   "peach",    render_kokofurikomi, CAPTION_KOKOFURIKOMI, "未投稿"),
     ("jido-shikyubi",   "mint",     render_jidoshikyubi, CAPTION_JIDOSHIKYUBI, "未投稿"),
+    ("matome-8",        "lavender", render_matome,       CAPTION_MATOME,       "未投稿"),
 ]
 
 
