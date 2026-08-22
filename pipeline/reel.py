@@ -1618,9 +1618,10 @@ COVER_SAFE = (500, 1400)
 
 
 def render_kogaku2026(T):
-    """T案: 高額療養費の上限が2026年8月から上がった話。
-    伸びた2本(医療費控除・ふるさと納税)はどちらも税金の話で、子育て世帯以外にも届いた。
-    これも同じく全世代が対象。しかも今月施行で、まだほとんど知られていない。約30秒。"""
+    """T案(修正): 高額療養費の上限が2026年8月から上がった話。
+    初版は「87,430円→92,940円」を大きく出し、前提の所得区分を42pxで最後に小さく添えていた。
+    上限は区分で4.4倍ちがうため、これは誤解を招く。前提を数字より先に出し、
+    区分ごとの幅を見せる場面を独立させた。約36秒。"""
     em = emoji_layer("🏥", 200)
     hook = text_layer("入院したときの上限額が\n今月から上がりました", font(78), T["ink"])
     hook2 = text_layer("2026年8月の診療分から", font(52), T["sub"])
@@ -1629,7 +1630,8 @@ def render_kogaku2026(T):
     s2b = text_layer("1か月の医療費が\n上限を超えたら戻ってくる", font(66), T["ink"])
     s2c = text_layer("その上限が 引き上げられました", font(50), T["brand_d"])
 
-    s3 = text_layer("どれくらい変わったか", font(56), T["sub"])
+    s3 = text_layer("まず 前提から", font(56), T["sub"])
+    b0 = bar_layer("標準報酬月額 28〜50万円の人", "上限は所得で変わります。これは真ん中の区分", T)
     b1 = bar_layer("医療費が100万円かかった月", "窓口ではいったん30万円払います", T)
     b2 = bar_layer("これまでの上限 87,430円", "超えた分は戻ってきました", T)
     b3 = bar_layer("今月からの上限 92,940円", "戻る額が その分だけ減ります", T)
@@ -1637,15 +1639,20 @@ def render_kogaku2026(T):
     s4a = text_layer("差額はいくらか", font(56), T["sub"])
     cf = font(150)
     s4b = text_layer("1回の入院で 増える負担です", font(50), T["ink"])
-    s4c = text_layer("標準報酬月額28〜50万円の場合", font(42), T["sub"])
 
-    s5a = text_layer("でも 増えただけではありません", font(54), T["ink"])
-    s5b = text_layer("「年間上限」が\n新しくできました", font(66), T["brand_d"])
-    s5c = text_layer("8月から翌年7月の合計が上限に達したら\nその年はもう払わなくていい", font(44), T["sub"])
+    s5a = text_layer("上限額は 所得で変わります", font(58), T["ink"])
+    w1 = bar_layer("標準報酬月額 26万円以下", "上限 61,500円(定額)", T)
+    w2 = bar_layer("標準報酬月額 28〜50万円", "上限 92,940円 ← さっきの例", T)
+    w3 = bar_layer("標準報酬月額 83万円以上", "上限 271,290円", T)
+    s5b = text_layer("医療費100万円の月の場合。自分の区分は\n給与明細か加入先の健康保険で確認できます", font(40), T["sub"])
 
-    s6a = text_layer("知っておくと損しないこと", font(56), T["sub"])
-    w1 = bar_layer("マイナ保険証を窓口で出す", "支払いが最初から上限額までになります", T)
-    w2 = bar_layer("あとから申請すると3か月以上", "その間は立て替えたままです", T)
+    s6a = text_layer("増えただけではありません", font(54), T["ink"])
+    s6b = text_layer("「年間上限」が\n新しくできました", font(66), T["brand_d"])
+    s6c = text_layer("8月から翌年7月の合計が上限に達したら\nその年はもう払わなくていい", font(44), T["sub"])
+
+    s7a = text_layer("知っておくと損しないこと", font(56), T["sub"])
+    v1 = bar_layer("マイナ保険証を窓口で出す", "支払いが最初から上限額までになります", T)
+    v2 = bar_layer("あとから申請すると3か月以上", "その間は立て替えたままです", T)
 
     c = cta_save(T, "入院が決まる前に", "保存 しておく")
 
@@ -1670,45 +1677,55 @@ def render_kogaku2026(T):
                 paste_center(img, z, 840, alpha=pp)
             if tt > 1.6:
                 paste_center(img, s2c, 1140, alpha=ease_out(min(1, (tt - 1.6) / 0.5)))
-        elif t < 17.0:
+        elif t < 18.0:
             tt = t - 9.4
-            paste_center(img, s3, 430, alpha=ease_out(min(1, tt / 0.4)))
-            for i, b in enumerate([b1, b2, b3]):
+            paste_center(img, s3, 400, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([b0, b1, b2, b3]):
                 st = 0.4 + i * 1.25
                 if tt < st:
                     break
                 q = ease_out(min(1, (tt - st) / 0.4))
-                paste_at(img, b, 90, 700 + i * 210, alpha=q, dx=int((1 - q) * -70))
-        elif t < 25.0:
-            tt = t - 17.0
-            paste_center(img, s4a, 520, alpha=ease_out(min(1, tt / 0.4)))
-            cp = ease_out(min(1, max(0.0, (tt - 0.6) / 1.8)))
+                paste_at(img, b, 90, 660 + i * 210, alpha=q, dx=int((1 - q) * -70))
+        elif t < 24.0:
+            tt = t - 18.0
+            paste_center(img, s4a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            cp = ease_out(min(1, max(0.0, (tt - 0.6) / 1.6)))
             txt = f"＋{int(5510 * cp):,} 円"
             tw = d.textlength(txt, font=cf)
-            d.text(((W - tw) / 2, 830), txt, font=cf, fill=T["brand_d"])
+            d.text(((W - tw) / 2, 850), txt, font=cf, fill=T["brand_d"])
             if cp >= 1.0:
-                paste_center(img, s4b, 1120, alpha=ease_out(min(1, (tt - 2.6) / 0.5)))
-                paste_center(img, s4c, 1260, alpha=ease_out(min(1, (tt - 3.0) / 0.5)))
-        elif t < 31.4:
-            tt = t - 25.0
-            paste_center(img, s5a, 560, alpha=ease_out(min(1, tt / 0.4)))
-            paste_center(img, s5b, 850, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
+                paste_center(img, s4b, 1150, alpha=ease_out(min(1, (tt - 2.4) / 0.5)))
+        elif t < 31.5:
+            tt = t - 24.0
+            paste_center(img, s5a, 460, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([w1, w2, w3]):
+                st = 0.4 + i * 1.25
+                if tt < st:
+                    break
+                q = ease_out(min(1, (tt - st) / 0.4))
+                paste_at(img, b, 90, 720 + i * 210, alpha=q, dx=int((1 - q) * -70))
+            if tt > 4.4:
+                paste_center(img, s5b, 1420, alpha=ease_out(min(1, (tt - 4.4) / 0.5)))
+        elif t < 38.0:
+            tt = t - 31.5
+            paste_center(img, s6a, 560, alpha=ease_out(min(1, tt / 0.4)))
+            paste_center(img, s6b, 850, alpha=ease_out(min(1, max(0.0, tt - 0.4) / 0.5)))
             if tt > 1.2:
-                paste_center(img, s5c, 1180, alpha=ease_out(min(1, (tt - 1.2) / 0.5)))
-        elif t < 37.6:
-            tt = t - 31.4
-            paste_center(img, s6a, 500, alpha=ease_out(min(1, tt / 0.4)))
-            for i, b in enumerate([w1, w2]):
+                paste_center(img, s6c, 1180, alpha=ease_out(min(1, (tt - 1.2) / 0.5)))
+        elif t < 44.5:
+            tt = t - 38.0
+            paste_center(img, s7a, 500, alpha=ease_out(min(1, tt / 0.4)))
+            for i, b in enumerate([v1, v2]):
                 st = 0.4 + i * 1.3
                 if tt < st:
                     break
                 q = ease_out(min(1, (tt - st) / 0.4))
                 paste_at(img, b, 90, 780 + i * 210, alpha=q, dx=int((1 - q) * -70))
         else:
-            draw_cta(img, c, t - 37.6)
+            draw_cta(img, c, t - 44.5)
         return img
 
-    return frame, 42.6
+    return frame, 49.5
 
 
 def render_kokofurikomi(T):
@@ -2404,6 +2421,16 @@ CAPTION_KOGAKU2026 = """【入院の上限額、今月から上がりました�
 ▶ これまでの上限 87,430円
 ▶ 今月からの上限 92,940円
 差は5,510円です。
+
+【上限額は所得で大きく変わります】
+医療費100万円の月・70歳未満の場合
+▶ 標準報酬月額26万円以下:61,500円
+▶ 28〜50万円:92,940円
+▶ 53〜79万円:183,130円
+▶ 83万円以上:271,290円
+▶ 低所得者(住民税非課税など):36,900円
+いちばん下といちばん上で4倍以上ちがいます。
+自分の区分は給与明細の標準報酬月額か、加入先の健康保険で確認できます。
 
 【増えただけではありません】
 今回、あわせて【年間上限】が新しくできました。
