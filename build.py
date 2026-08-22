@@ -299,6 +299,32 @@ pq && pq.addEventListener('input', () => {
     return "".join(parts)
 
 
+_IRY_PREF_CACHE = None
+
+
+def iryohi_pref_stats():
+    """全国1,740市区町村の医療費助成データを都道府県別に集計する。
+    「子ども医療費助成 全国 比較」に答えられるのは、一次データを持っている側だけ。
+    完全無料(所得制限なし・自己負担なし)の割合が高い順に並べる。"""
+    global _IRY_PREF_CACHE
+    if _IRY_PREF_CACHE is None:
+        rows = []
+        if os.path.exists(IRYOHI):
+            ms = json.load(open(IRYOHI, encoding="utf-8"))["municipalities"]
+            by = {}
+            for m in ms:
+                by.setdefault(m["pref"], []).append(m)
+            for pref, lst in by.items():
+                n = len(lst)
+                rows.append((pref, n,
+                             sum(1 for x in lst if not x["limit_out"] and not x["copay_out"]),
+                             sum(1 for x in lst if x["copay_out"]),
+                             sum(1 for x in lst if x["limit_out"])))
+            rows.sort(key=lambda r: (-r[2] / r[1], r[0]))
+        _IRY_PREF_CACHE = rows
+    return _IRY_PREF_CACHE
+
+
 def build_program(p, data):
     # 「いつ振り込まれるか」は制度名と並んでよく検索されるのに、どの解説にも書いていない。
     # 対象・申請先と同じ高さに置く。
@@ -356,6 +382,21 @@ def build_program(p, data):
         if pf.get("note"):
             parts.append(f'<div class="note">📌 {html.escape(pf["note"])}</div>')
     if p.get("id") == "kodomo-iryohi":
+        st = iryohi_pref_stats()
+        if st:
+            parts.append('<div class="sec-title">都道府県別に見ると、どうなっているか</div>')
+            parts.append('<p>全国1,740市区町村のデータを都道府県ごとに集計しました。'
+                         '「完全無料」は所得制限も窓口の自己負担もない市区町村の数です。'
+                         '割合の高い順に並べています。</p>')
+            parts.append('<div class="tbwrap"><table class="tb"><thead><tr>'
+                         '<th>都道府県</th><th>市区町村数</th><th>完全無料</th>'
+                         '<th>自己負担あり</th><th>所得制限あり</th></tr></thead><tbody>')
+            for pref, n, free, copay, limit in st:
+                parts.append(f"<tr><td>{html.escape(pref)}</td><td>{n}</td>"
+                             f"<td><strong>{free}</strong></td><td>{copay}</td><td>{limit}</td></tr>")
+            parts.append('</tbody></table></div>')
+            parts.append('<div class="note">📌 出典: こども家庭庁の調査(令和7年4月1日時点)をもとに集計。'
+                         '通院の助成についての数字です。入院は条件が異なる場合があります。</div>')
         parts.append('<a class="cta" href="./chiiki.html" style="display:block;text-align:center">📍 お住まいの市区町村の助成を調べる</a>')
     if e.get("tips"):
         parts.append('<div class="sec-title">申請のコツ</div><ul class="tips">')
