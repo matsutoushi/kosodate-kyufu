@@ -12,7 +12,7 @@ import subprocess
 import sys
 import tempfile
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from carousel import THEMES, font, EMOJI_FONT  # noqa: E402
@@ -2028,6 +2028,168 @@ def render_matome(T):
     return frame, 41.4
 
 
+# --- 早見表スタイル -------------------------------------------------------
+# 従来のカバー(絵文字1つ+2行)は余白が多く、サムネイルの時点で
+# 「読む価値がある」と伝わらなかった。参考にした3アカウントはいずれも
+# 表紙の時点で早見表として成立している。密度を上げるための部品。
+PAPER = "#FBF8F4"
+P_INK = "#23262E"
+P_SUB = "#6B7280"
+P_WARM = "#F4643B"
+P_COOL = "#2F6C7A"
+P_LINE = "#E7DED3"
+
+
+def paper_bg(img, T):
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, W, H], fill=PAPER)
+    band = Image.new("RGB", (W, 520), "#F3E7DC")
+    img.paste(band.filter(ImageFilter.GaussianBlur(60)), (0, -160))
+    band2 = Image.new("RGB", (W, 420), "#EFE6DE")
+    img.paste(band2.filter(ImageFilter.GaussianBlur(60)), (0, H - 300))
+    d.rectangle([0, 0, W, 18], fill=P_WARM)
+    d.rectangle([0, H - 18, W, H], fill=P_WARM)
+
+
+def pill(d, x, y, text, fill):
+    f = font(40)
+    tw = d.textlength(text, font=f)
+    d.rounded_rectangle([x, y, x + tw + 44, y + 66], radius=33, fill=fill)
+    d.text((x + 22, y + 8), text, font=f, fill="#FFFFFF")
+    return tw + 44
+
+
+def kabe_row(no, yen, what, cond, effect, warm):
+    lay = Image.new("RGBA", (960, 178), (0, 0, 0, 0))
+    d = ImageDraw.Draw(lay)
+    d.rounded_rectangle([0, 0, 960, 178], radius=22, fill="#FFFFFF")
+    d.rounded_rectangle([0, 0, 960, 178], radius=22, outline=P_LINE, width=2)
+    tint = "#FFF3EC" if warm else "#EEF4F6"
+    key = P_WARM if warm else P_COOL
+    d.rounded_rectangle([0, 0, 268, 178], radius=22, fill=tint)
+    d.rectangle([246, 0, 268, 178], fill=tint)
+    yf = font(66)
+    yw = d.textlength(yen, font=yf)
+    d.text(((268 - yw) / 2, 32), yen, font=yf, fill=key)
+    d.text((22, 116), f"{no}つ目の壁", font=font(30), fill=P_SUB)
+    d.text((300, 24), what, font=font(52), fill=P_INK)
+    d.text((300, 88), cond, font=font(32), fill=P_SUB)
+    ef = font(34)
+    ew = d.textlength(effect, font=ef)
+    d.rounded_rectangle([938 - ew - 32, 118, 938, 168], radius=25, fill=tint)
+    d.text((938 - ew - 16, 126), effect, font=ef, fill=key)
+    return lay
+
+
+KABE_ROWS = [
+    ("106万円", "社会保険に入る", "勤務先の規模など条件つき", "手取りが減る", True),
+    ("123万円", "名前が変わるだけ", "配偶者控除→配偶者特別控除", "手取りは減らない", False),
+    ("130万円", "社会保険に入る", "106万の条件に当たらない人", "手取りが減る", True),
+    ("160万円", "所得税がかかる", "ここから控除も減り始める", "少しずつ減る", True),
+]
+
+KABE_DETAIL = [
+    ("106万円", "社会保険に入ります",
+     "週20時間以上・月8.8万円以上などの条件を満たすと、\n勤務先の社会保険に加入します",
+     "手取りは減りますが、将来の年金は増え、\n傷病手当金も使えるようになります", True),
+    ("123万円", "実は、何も減りません",
+     "配偶者控除から配偶者特別控除に切り替わるだけで、\n控除額は満額のまま引き継がれます",
+     "ここで働くのをやめるのが、いちばんもったいない", False),
+    ("130万円", "106万に当てはまらない人の壁",
+     "勤務先の規模などで106万の条件に当たらない場合、\nここで社会保険の扶養から外れます",
+     "こちらは条件がなく、超えれば加入になります", True),
+    ("160万円", "ここで初めて所得税",
+     "基礎控除と給与所得控除の引き上げで、\n所得税がかかり始めるのは160万円からになりました",
+     "配偶者特別控除が減り始めるのも、ここからです", True),
+]
+
+
+def render_kabe2(T):
+    """X案: 年収の壁の早見表。同テーマで20万ビューを取っている競合があり、
+    こちらは前回201ビュー。中身(検証済みの4つの壁+シミュレーター)は勝っているので、
+    表紙の時点で早見表として成立する作りに変える。約32秒。"""
+    hook1 = text_layer("103万の壁を", font(88), P_INK)
+    hook2 = text_layer("まだ気にしていませんか", font(80), P_WARM)
+    hook3 = text_layer("その壁は、もうありません", font(50), P_SUB)
+    hook4 = text_layer("いまの壁は 4つです", font(56), P_INK)
+
+    rows = [kabe_row(i + 1, *r) for i, r in enumerate(KABE_ROWS)]
+    t1 = text_layer("年収の壁", font(128), P_INK)
+    t2 = text_layer("ぜんぶ一覧", font(96), P_WARM)
+    t3 = text_layer("103万の壁は、もうありません", font(46), P_SUB)
+    foot = text_layer("こそだて給付ナビ", font(40), P_SUB)
+
+    det = []
+    for yen, head, body, note, warm in KABE_DETAIL:
+        key = P_WARM if warm else P_COOL
+        det.append({
+            "yen": text_layer(yen, font(120), key),
+            "head": text_layer(head, font(72), P_INK),
+            "body": text_layer(body, font(44), P_SUB),
+            "note": text_layer(note, font(46), key),
+        })
+
+    c = cta_save(T, "働き方を決める前に", "保存 しておく")
+
+    def draw_list(img, shown):
+        d = ImageDraw.Draw(img)
+        pill(d, 74, 150, "保存版", P_WARM)
+        pill(d, 236, 150, "2026年版", "#5B8A94")
+        paste_center(img, t1, 340)
+        paste_center(img, t2, 476)
+        paste_center(img, t3, 586)
+        for i in range(shown):
+            paste_at(img, rows[i], 60, 736 + i * 196)
+        paste_center(img, foot, 1520)
+
+    def frame(t):
+        img = Image.new("RGB", (W, H), PAPER)
+        paper_bg(img, T)
+        if t < 4.0:
+            p = ease_out(min(1, t / 0.3))
+            paste_center(img, hook1, 720, dy=int((1 - p) * 50))
+            paste_center(img, hook2, 850, dy=int((1 - p) * 50))
+            if t > 1.4:
+                paste_center(img, hook3, 1030, alpha=ease_out(min(1, (t - 1.4) / 0.4)))
+            if t > 2.4:
+                paste_center(img, hook4, 1180, alpha=ease_out(min(1, (t - 2.4) / 0.4)))
+        elif t < 12.0:
+            tt = t - 4.0
+            draw_list(img, min(len(rows), int(tt / 0.5) + 1))
+        elif t < 34.0:
+            i = min(len(det) - 1, int((t - 12.0) / 5.5))
+            tt = (t - 12.0) - i * 5.5
+            x = det[i]
+            paste_center(img, x["yen"], 430, alpha=ease_out(min(1, tt / 0.25)))
+            paste_center(img, x["head"], 610, alpha=ease_out(min(1, tt / 0.3)))
+            if tt > 0.6:
+                paste_center(img, x["body"], 830, alpha=ease_out(min(1, (tt - 0.6) / 0.4)))
+            if tt > 2.0:
+                paste_center(img, x["note"], 1100, alpha=ease_out(min(1, (tt - 2.0) / 0.4)))
+        elif t < 40.0:
+            draw_list(img, len(rows))
+        else:
+            draw_cta(img, c, t - 40.0)
+        return img
+
+    return frame, 45.0
+
+
+def cover_kabe2(T):
+    img = Image.new("RGB", (W, H), PAPER)
+    paper_bg(img, T)
+    d = ImageDraw.Draw(img)
+    pill(d, 74, 150, "保存版", P_WARM)
+    pill(d, 236, 150, "2026年版", "#5B8A94")
+    paste_center(img, text_layer("年収の壁", font(128), P_INK), 340)
+    paste_center(img, text_layer("ぜんぶ一覧", font(96), P_WARM), 476)
+    paste_center(img, text_layer("103万の壁は、もうありません", font(46), P_SUB), 586)
+    for i, r in enumerate(KABE_ROWS):
+        paste_at(img, kabe_row(i + 1, *r), 60, 736 + i * 196)
+    paste_center(img, text_layer("こそだて給付ナビ", font(40), P_SUB), 1520)
+    return img
+
+
 def build_cover(T, emoji, line1, line2, tag):
     img = Image.new("RGB", (W, H), T["bg"])
     d = ImageDraw.Draw(img)
@@ -2043,6 +2205,49 @@ def build_cover(T, emoji, line1, line2, tag):
     paste_center(img, text_layer("こそだて給付ナビ", font(46), T["sub"]), 1430)
     return img
 
+
+CAPTION_KABE2 = """【年収の壁 ぜんぶ一覧・2026年版】
+
+📌 働き方を決める前に、この1枚を保存しておいてください。
+
+「103万円を超えないように」と調整している方へ。
+2025年の税制改正で、その壁はもうありません。いまの壁は4つです。
+
+━━━━━━━━━━
+①【106万円】社会保険に入る
+週20時間以上・月額賃金8.8万円以上・勤務先の規模などの条件を満たすと、勤務先の社会保険に加入します。
+手取りは減りますが、将来の年金が増え、傷病手当金なども使えるようになります。条件は勤務先に確認してください。
+
+②【123万円】名前が変わるだけ
+ここがいちばん誤解されています。
+123万円を超えると配偶者控除から外れますが、そのまま配偶者特別控除に切り替わり、控除額は満額のまま引き継がれます。
+つまり【手取りは減りません】。ここで働くのをやめるのが、いちばんもったいない。
+
+③【130万円】106万に当てはまらない人の壁
+勤務先の規模などで106万円の条件に当たらない場合、130万円で社会保険の扶養から外れます。
+こちらは条件がなく、超えれば加入になります。
+
+④【160万円】ここで初めて所得税
+基礎控除と給与所得控除が引き上げられたため、本人に所得税がかかり始めるのは160万円からになりました。
+配偶者特別控除が減り始めるのも、ここからです。
+━━━━━━━━━━
+
+【結論】
+本当に手取りが減るのは、税金ではなく【社会保険】のほうです。
+123万円は名前が変わるだけ。106万・130万を意識してください。
+
+プロフィールのリンクから、年収を入れるとグラフで手取りが動くシミュレーターが使えます。
+ご自身の場合がいくらになるか、配偶者の年収も入れて確かめてみてください。
+
+─────────
+※基礎控除の上乗せは令和7年分・8年分の措置で、令和9年分以後は変わる予定です。
+出典:国税庁／厚生労働省。条件は勤務先・お住まいの状況により異なります。
+
+#年収の壁 #パート #扶養内 #配偶者控除 #社会保険 #働き方 #主婦 #ワーママ #お金の勉強 #家計管理 #子育て #103万の壁 #106万の壁 #130万の壁
+"""
+
+
+COVER_CUSTOM = {"kabe-hayami": cover_kabe2}
 
 COVERS = {
     "shinsei-list":  ("⚠️", "知らないと", "ずっと 0 円", "申請しないともらえないお金"),
@@ -2695,6 +2900,7 @@ REELS = [
     ("koko-furikomi",   "peach",    render_kokofurikomi, CAPTION_KOKOFURIKOMI, "未投稿"),
     ("jido-shikyubi",   "mint",     render_jidoshikyubi, CAPTION_JIDOSHIKYUBI, "未投稿"),
     ("matome-8",        "lavender", render_matome,       CAPTION_MATOME,       "未投稿"),
+    ("kabe-hayami",     "coral",    render_kabe2,        CAPTION_KABE2,        "未投稿"),
 ]
 
 
@@ -2780,7 +2986,9 @@ def main():
         frame_fn, dur = polish(*fn(THEMES[theme]), T=THEMES[theme])
         out, n = encode(frame_fn, dur, d, cap)
         size = os.path.getsize(out) / 1024
-        if name in COVERS:
+        if name in COVER_CUSTOM:
+            COVER_CUSTOM[name](THEMES[theme]).save(os.path.join(d, "cover.png"))
+        elif name in COVERS:
             build_cover(THEMES[theme], *COVERS[name]).save(os.path.join(d, "cover.png"))
         print(f"  {i:02d}-{name}/ [{theme}]: {dur:.1f}秒 / {n}フレーム / {size:.0f}KB (+cover)")
     write_index()
