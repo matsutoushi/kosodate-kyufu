@@ -2028,10 +2028,125 @@ def render_matome(T):
     return frame, 41.4
 
 
+# 早見表の仕様。ここに1件足せばリールが1本増える。
+# 数字はすべて data/programs.json 側で一次情報を確認済みのもの。
+HAYAMI = {
+    "kabe-hayami": {
+        "badge": "2026年版",
+        "hook": ("103万の壁を", "まだ気にしていませんか",
+                 "その壁は、もうありません", "いまの壁は 4つです"),
+        "title": ("年収の壁", "ぜんぶ一覧", "103万の壁は、もうありません"),
+        "cta": ("働き方を決める前に", "保存 しておく"),
+        "rows": [
+            ("106万円", "社会保険に入る", "勤務先の規模など条件つき", "手取りが減る", True),
+            ("123万円", "名前が変わるだけ", "配偶者控除→配偶者特別控除", "手取りは減らない", False),
+            ("130万円", "社会保険に入る", "106万の条件に当たらない人", "手取りが減る", True),
+            ("160万円", "所得税がかかる", "ここから控除も減り始める", "少しずつ減る", True),
+        ],
+        "details": [
+            ("106万円", "社会保険に入ります",
+             "週20時間以上・月8.8万円以上などの条件を満たすと、\n勤務先の社会保険に加入します",
+             "手取りは減りますが、将来の年金は増え、\n傷病手当金も使えるようになります", True),
+            ("123万円", "実は、何も減りません",
+             "配偶者控除から配偶者特別控除に切り替わるだけで、\n控除額は満額のまま引き継がれます",
+             "ここで働くのをやめるのが、いちばんもったいない", False),
+            ("130万円", "106万に当てはまらない人の壁",
+             "勤務先の規模などで106万の条件に当たらない場合、\nここで社会保険の扶養から外れます",
+             "こちらは条件がなく、超えれば加入になります", True),
+            ("160万円", "ここで初めて所得税",
+             "基礎控除と給与所得控除の引き上げで、\n所得税がかかり始めるのは160万円からです",
+             "配偶者特別控除が減り始めるのも、ここから", True),
+        ],
+    },
+    "shussan-hayami": {
+        "badge": "2026年版",
+        "hook": ("出産でもらえるお金", "ぜんぶ足すと",
+                 "知らないと申請しそびれます", "主なものは 4つです"),
+        "title": ("出産のお金", "ぜんぶ一覧", "申請しないと受け取れません"),
+        "cta": ("産休に入る前に", "保存 しておく"),
+        "rows": [
+            ("50万円", "出産育児一時金", "健康保険から・子ども1人につき", "全員が対象", False),
+            ("給料の2/3", "出産手当金", "会社員が産休を取ったとき", "最大98日分", False),
+            ("賃金の67%", "育児休業給付金", "雇用保険から・最初の180日", "その後50%", False),
+            ("10万円", "妊婦のための支援給付", "妊娠時5万円＋出生時5万円", "自治体から", False),
+        ],
+        "details": [
+            ("50万円", "出産育児一時金",
+             "加入している健康保険から、子ども1人につき50万円。\n直接支払制度を使えば病院に直接支払われます",
+             "時効は出産日の翌日から2年です", False),
+            ("給料の2/3", "出産手当金",
+             "会社員が産休を取ったときに、健康保険から。\n産前42日＋産後56日の最大98日分が対象です",
+             "産休が終わってからまとめて申請します", False),
+            ("賃金の67%", "育児休業給付金",
+             "育休中に雇用保険から。最初の180日は67%、\nその後は50%になります",
+             "2か月分ずつの申請なので、初回の入金は先です", True),
+            ("10万円", "妊婦のための支援給付",
+             "妊娠を届け出たときに5万円、\n出産後にこども1人につき5万円",
+             "受け取り方は市区町村によって違います", False),
+        ],
+    },
+    "gakuhi-hayami": {
+        "badge": "2026年度",
+        "hook": ("高校と大学の学費", "いくら支援されるか",
+                 "申請しないと1円も出ません", "主なものは 4つです"),
+        "title": ("学費の支援", "ぜんぶ一覧", "所得制限は撤廃されました"),
+        "cta": ("進学を決める前に", "保存 しておく"),
+        "rows": [
+            ("11.9万円", "公立高校の授業料", "就学支援金・実質無償になります", "申請が必要", True),
+            ("45.7万円", "私立高校の授業料", "就学支援金の年間上限", "所得制限なし", False),
+            ("70万円", "私立大学の授業料", "子ども3人以上の多子世帯", "入学金26万も", False),
+            ("返済不要", "給付型奨学金", "修学支援新制度・世帯収入で判定", "高3春に予約", True),
+        ],
+        "details": [
+            ("11.9万円", "公立高校は実質無償",
+             "高等学校等就学支援金から年11万8,800円。\n授業料相当額なので、実質的に無償になります",
+             "自動では始まりません。学校の案内を必ず出す", True),
+            ("45.7万円", "私立高校の上限額",
+             "2026年度から所得制限が撤廃され、\n私立の加算額も引き上げられました",
+             "お金は口座に入らず、授業料と相殺されます", False),
+            ("70万円", "多子世帯なら大学も",
+             "扶養する子どもが3人以上なら、所得制限なしで\n私立大の授業料70万円・入学金26万円まで減免",
+             "上の子が就職して扶養を外れると対象外に", False),
+            ("返済不要", "給付型奨学金",
+             "高等教育の修学支援新制度。授業料等の減免と\n返さなくていい奨学金がセットです",
+             "高3の春の「予約採用」が入口になります", True),
+        ],
+    },
+    "kigen-hayami": {
+        "badge": "時効あり",
+        "hook": ("申請の期限を", "過ぎていませんか",
+                 "1日でも遅れると戻りません", "特に危ないのは 4つ"),
+        "title": ("申請の期限", "ぜんぶ一覧", "過ぎると取り戻せません"),
+        "cta": ("忘れてしまう前に", "保存 しておく"),
+        "rows": [
+            ("15日", "児童手当", "出生・転入した日の翌日から", "遅れた月は消える", True),
+            ("2年", "高額療養費", "診療した月の翌月1日から", "入院した分", True),
+            ("2年", "出産のお金", "出産育児一時金・出産手当金", "健康保険の給付", True),
+            ("5年", "医療費控除", "さかのぼって申告できます", "今からでも間に合う", False),
+        ],
+        "details": [
+            ("15日", "児童手当がいちばん危ない",
+             "出生・転入した日の翌日から15日以内。\n遅れた月の分はさかのぼって受け取れません",
+             "里帰り中でも、申請先は住所地の市区町村です", True),
+            ("2年", "高額療養費",
+             "診療した月の翌月1日から2年で時効。\n入院や帝王切開で高額を払った分が対象です",
+             "マイナ保険証を出せば、そもそも立て替え不要", True),
+            ("2年", "出産のお金も2年",
+             "出産育児一時金は出産日の翌日から、\n出産手当金は産休開始の翌日から2年です",
+             "直接支払制度を使わなかった分は要申請", True),
+            ("5年", "医療費控除は5年戻れる",
+             "唯一、過去にさかのぼれるものです。\n出産した年の分をまだ申告していないなら間に合います",
+             "会社の年末調整ではできません。確定申告です", False),
+        ],
+    },
+}
+
+
 # --- 早見表スタイル -------------------------------------------------------
 # 従来のカバー(絵文字1つ+2行)は余白が多く、サムネイルの時点で
-# 「読む価値がある」と伝わらなかった。参考にした3アカウントはいずれも
-# 表紙の時点で早見表として成立している。密度を上げるための部品。
+# 「読む価値がある」と伝わらなかった。参考にした3アカウント
+# (moneylabo_cat / sugar_mane7 / fp.daisuke)はいずれも表紙が早見表として
+# 成立している。1本ごとに書かず、仕様(HAYAMI)を足すだけで増やせる形にする。
 PAPER = "#FBF8F4"
 P_INK = "#23262E"
 P_SUB = "#6B7280"
@@ -2040,7 +2155,7 @@ P_COOL = "#2F6C7A"
 P_LINE = "#E7DED3"
 
 
-def paper_bg(img, T):
+def paper_bg(img):
     d = ImageDraw.Draw(img)
     d.rectangle([0, 0, W, H], fill=PAPER)
     band = Image.new("RGB", (W, 520), "#F3E7DC")
@@ -2059,151 +2174,234 @@ def pill(d, x, y, text, fill):
     return tw + 44
 
 
-def kabe_row(no, yen, what, cond, effect, warm):
+def hayami_row(no, key, what, cond, effect, warm):
+    """1行 = 見出しの数字 + 制度名 + 条件 + 効き方。表紙のまま早見表になる密度にする。"""
     lay = Image.new("RGBA", (960, 178), (0, 0, 0, 0))
     d = ImageDraw.Draw(lay)
     d.rounded_rectangle([0, 0, 960, 178], radius=22, fill="#FFFFFF")
     d.rounded_rectangle([0, 0, 960, 178], radius=22, outline=P_LINE, width=2)
     tint = "#FFF3EC" if warm else "#EEF4F6"
-    key = P_WARM if warm else P_COOL
-    d.rounded_rectangle([0, 0, 268, 178], radius=22, fill=tint)
-    d.rectangle([246, 0, 268, 178], fill=tint)
-    yf = font(66)
-    yw = d.textlength(yen, font=yf)
-    d.text(((268 - yw) / 2, 32), yen, font=yf, fill=key)
-    d.text((22, 116), f"{no}つ目の壁", font=font(30), fill=P_SUB)
-    d.text((300, 24), what, font=font(52), fill=P_INK)
-    d.text((300, 88), cond, font=font(32), fill=P_SUB)
-    ef = font(34)
+    col = P_WARM if warm else P_COOL
+    d.rounded_rectangle([0, 0, 288, 178], radius=22, fill=tint)
+    d.rectangle([266, 0, 288, 178], fill=tint)
+    # 数字は文字数で自動縮小(「45.7万円」も「返済不要」も同じ枠に収める)
+    size = 66
+    while size > 34 and d.textlength(key, font=font(size)) > 250:
+        size -= 4
+    kf = font(size)
+    kw = d.textlength(key, font=kf)
+    d.text(((288 - kw) / 2, 34 + (66 - size) // 2), key, font=kf, fill=col)
+    d.text((22, 118), f"{no}つ目", font=font(30), fill=P_SUB)
+    d.text((320, 24), what, font=font(50), fill=P_INK)
+    d.text((320, 86), cond, font=font(31), fill=P_SUB)
+    ef = font(33)
     ew = d.textlength(effect, font=ef)
-    d.rounded_rectangle([938 - ew - 32, 118, 938, 168], radius=25, fill=tint)
-    d.text((938 - ew - 16, 126), effect, font=ef, fill=key)
+    d.rounded_rectangle([938 - ew - 32, 118, 938, 166], radius=24, fill=tint)
+    d.text((938 - ew - 16, 126), effect, font=ef, fill=col)
     return lay
 
 
-KABE_ROWS = [
-    ("106万円", "社会保険に入る", "勤務先の規模など条件つき", "手取りが減る", True),
-    ("123万円", "名前が変わるだけ", "配偶者控除→配偶者特別控除", "手取りは減らない", False),
-    ("130万円", "社会保険に入る", "106万の条件に当たらない人", "手取りが減る", True),
-    ("160万円", "所得税がかかる", "ここから控除も減り始める", "少しずつ減る", True),
-]
-
-KABE_DETAIL = [
-    ("106万円", "社会保険に入ります",
-     "週20時間以上・月8.8万円以上などの条件を満たすと、\n勤務先の社会保険に加入します",
-     "手取りは減りますが、将来の年金は増え、\n傷病手当金も使えるようになります", True),
-    ("123万円", "実は、何も減りません",
-     "配偶者控除から配偶者特別控除に切り替わるだけで、\n控除額は満額のまま引き継がれます",
-     "ここで働くのをやめるのが、いちばんもったいない", False),
-    ("130万円", "106万に当てはまらない人の壁",
-     "勤務先の規模などで106万の条件に当たらない場合、\nここで社会保険の扶養から外れます",
-     "こちらは条件がなく、超えれば加入になります", True),
-    ("160万円", "ここで初めて所得税",
-     "基礎控除と給与所得控除の引き上げで、\n所得税がかかり始めるのは160万円からになりました",
-     "配偶者特別控除が減り始めるのも、ここからです", True),
-]
-
-
-def render_kabe2(T):
-    """X案: 年収の壁の早見表。同テーマで20万ビューを取っている競合があり、
-    こちらは前回201ビュー。中身(検証済みの4つの壁+シミュレーター)は勝っているので、
-    表紙の時点で早見表として成立する作りに変える。約32秒。"""
-    hook1 = text_layer("103万の壁を", font(88), P_INK)
-    hook2 = text_layer("まだ気にしていませんか", font(80), P_WARM)
-    hook3 = text_layer("その壁は、もうありません", font(50), P_SUB)
-    hook4 = text_layer("いまの壁は 4つです", font(56), P_INK)
-
-    rows = [kabe_row(i + 1, *r) for i, r in enumerate(KABE_ROWS)]
-    t1 = text_layer("年収の壁", font(128), P_INK)
-    t2 = text_layer("ぜんぶ一覧", font(96), P_WARM)
-    t3 = text_layer("103万の壁は、もうありません", font(46), P_SUB)
-    foot = text_layer("こそだて給付ナビ", font(40), P_SUB)
-
-    det = []
-    for yen, head, body, note, warm in KABE_DETAIL:
-        key = P_WARM if warm else P_COOL
-        det.append({
-            "yen": text_layer(yen, font(120), key),
-            "head": text_layer(head, font(72), P_INK),
-            "body": text_layer(body, font(44), P_SUB),
-            "note": text_layer(note, font(46), key),
-        })
-
-    c = cta_save(T, "働き方を決める前に", "保存 しておく")
-
-    def draw_list(img, shown):
-        d = ImageDraw.Draw(img)
-        pill(d, 74, 150, "保存版", P_WARM)
-        pill(d, 236, 150, "2026年版", "#5B8A94")
-        paste_center(img, t1, 340)
-        paste_center(img, t2, 476)
-        paste_center(img, t3, 586)
-        for i in range(shown):
-            paste_at(img, rows[i], 60, 736 + i * 196)
-        paste_center(img, foot, 1520)
-
-    def frame(t):
-        img = Image.new("RGB", (W, H), PAPER)
-        paper_bg(img, T)
-        if t < 4.0:
-            p = ease_out(min(1, t / 0.3))
-            paste_center(img, hook1, 720, dy=int((1 - p) * 50))
-            paste_center(img, hook2, 850, dy=int((1 - p) * 50))
-            if t > 1.4:
-                paste_center(img, hook3, 1030, alpha=ease_out(min(1, (t - 1.4) / 0.4)))
-            if t > 2.4:
-                paste_center(img, hook4, 1180, alpha=ease_out(min(1, (t - 2.4) / 0.4)))
-        elif t < 12.0:
-            tt = t - 4.0
-            draw_list(img, min(len(rows), int(tt / 0.5) + 1))
-        elif t < 34.0:
-            i = min(len(det) - 1, int((t - 12.0) / 5.5))
-            tt = (t - 12.0) - i * 5.5
-            x = det[i]
-            paste_center(img, x["yen"], 430, alpha=ease_out(min(1, tt / 0.25)))
-            paste_center(img, x["head"], 610, alpha=ease_out(min(1, tt / 0.3)))
-            if tt > 0.6:
-                paste_center(img, x["body"], 830, alpha=ease_out(min(1, (tt - 0.6) / 0.4)))
-            if tt > 2.0:
-                paste_center(img, x["note"], 1100, alpha=ease_out(min(1, (tt - 2.0) / 0.4)))
-        elif t < 40.0:
-            draw_list(img, len(rows))
-        else:
-            draw_cta(img, c, t - 40.0)
-        return img
-
-    return frame, 45.0
-
-
-def cover_kabe2(T):
-    img = Image.new("RGB", (W, H), PAPER)
-    paper_bg(img, T)
+def _hayami_list(img, spec, rows, shown):
     d = ImageDraw.Draw(img)
     pill(d, 74, 150, "保存版", P_WARM)
-    pill(d, 236, 150, "2026年版", "#5B8A94")
-    paste_center(img, text_layer("年収の壁", font(128), P_INK), 340)
-    paste_center(img, text_layer("ぜんぶ一覧", font(96), P_WARM), 476)
-    paste_center(img, text_layer("103万の壁は、もうありません", font(46), P_SUB), 586)
-    for i, r in enumerate(KABE_ROWS):
-        paste_at(img, kabe_row(i + 1, *r), 60, 736 + i * 196)
-    paste_center(img, text_layer("こそだて給付ナビ", font(40), P_SUB), 1520)
-    return img
+    pill(d, 236, 150, spec["badge"], "#5B8A94")
+    paste_center(img, spec["_t1"], 340)
+    paste_center(img, spec["_t2"], 476)
+    paste_center(img, spec["_t3"], 586)
+    for i in range(shown):
+        paste_at(img, rows[i], 60, 736 + i * 196)
+    paste_center(img, spec["_foot"], 1520)
 
 
-def build_cover(T, emoji, line1, line2, tag):
-    img = Image.new("RGB", (W, H), T["bg"])
-    d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, W, 14], fill=T["brand"])
-    d.rectangle([0, H - 14, W, H], fill=T["brand"])
-    # 安全領域の中で組む(中央 y=950 を基準に上下へ展開)
-    d.rounded_rectangle([70, 560, W - 70, 1340], radius=60, fill=T["soft"])
-    paste_center(img, emoji_layer(emoji, 190), 700)
-    paste_center(img, text_layer(line1, font(84), T["ink"]), 900)
-    paste_center(img, text_layer(line2, font(96), T["brand_d"]), 1080)
-    # タグと屋号(切られても本体が成立するよう、装飾の位置づけにする)
-    paste_center(img, text_layer(tag, font(44), T["sub"]), 1250)
-    paste_center(img, text_layer("こそだて給付ナビ", font(46), T["sub"]), 1430)
-    return img
+def _hayami_prepare(spec):
+    """テキストレイヤは1度だけ作る(フレームごとに作ると極端に遅くなる)。"""
+    if "_t1" in spec:
+        return spec
+    spec["_t1"] = text_layer(spec["title"][0], font(128), P_INK)
+    spec["_t2"] = text_layer(spec["title"][1], font(96), P_WARM)
+    spec["_t3"] = text_layer(spec["title"][2], font(46), P_SUB)
+    spec["_foot"] = text_layer("こそだて給付ナビ", font(40), P_SUB)
+    spec["_rows"] = [hayami_row(i + 1, *r) for i, r in enumerate(spec["rows"])]
+    spec["_hook"] = [
+        text_layer(spec["hook"][0], font(88), P_INK),
+        text_layer(spec["hook"][1], font(80), P_WARM),
+        text_layer(spec["hook"][2], font(50), P_SUB),
+        text_layer(spec["hook"][3], font(56), P_INK),
+    ]
+    det = []
+    for key, head, body, note, warm in spec["details"]:
+        col = P_WARM if warm else P_COOL
+        det.append({
+            "key": text_layer(key, font(112), col),
+            "head": text_layer(head, font(70), P_INK),
+            "body": text_layer(body, font(44), P_SUB),
+            "note": text_layer(note, font(46), col),
+        })
+    spec["_det"] = det
+    return spec
+
+
+def hayami(name):
+    """仕様名から描画関数を作る。REELS には hayami("...") を入れる。"""
+    def render(T):
+        spec = _hayami_prepare(HAYAMI[name])
+        rows, det, hk = spec["_rows"], spec["_det"], spec["_hook"]
+        n = len(det)
+        t_list = 12.0
+        t_det = t_list + n * 5.5
+        t_list2 = t_det + 6.0
+        dur = t_list2 + 5.0
+        c = cta_save(T, spec["cta"][0], spec["cta"][1])
+
+        def frame(t):
+            img = Image.new("RGB", (W, H), PAPER)
+            paper_bg(img)
+            if t < 4.0:
+                p = ease_out(min(1, t / 0.3))
+                paste_center(img, hk[0], 720, dy=int((1 - p) * 50))
+                paste_center(img, hk[1], 850, dy=int((1 - p) * 50))
+                if t > 1.4:
+                    paste_center(img, hk[2], 1030, alpha=ease_out(min(1, (t - 1.4) / 0.4)))
+                if t > 2.4:
+                    paste_center(img, hk[3], 1180, alpha=ease_out(min(1, (t - 2.4) / 0.4)))
+            elif t < t_list:
+                _hayami_list(img, spec, rows, min(n, int((t - 4.0) / 0.5) + 1))
+            elif t < t_det:
+                i = min(n - 1, int((t - t_list) / 5.5))
+                tt = (t - t_list) - i * 5.5
+                x = det[i]
+                paste_center(img, x["key"], 430, alpha=ease_out(min(1, tt / 0.25)))
+                paste_center(img, x["head"], 610, alpha=ease_out(min(1, tt / 0.3)))
+                if tt > 0.6:
+                    paste_center(img, x["body"], 830, alpha=ease_out(min(1, (tt - 0.6) / 0.4)))
+                if tt > 2.0:
+                    paste_center(img, x["note"], 1100, alpha=ease_out(min(1, (tt - 2.0) / 0.4)))
+            elif t < t_list2:
+                _hayami_list(img, spec, rows, n)
+            else:
+                draw_cta(img, c, t - t_list2)
+            return img
+
+        return frame, dur
+    return render
+
+
+def cover_hayami(name):
+    def build(T):
+        spec = _hayami_prepare(HAYAMI[name])
+        img = Image.new("RGB", (W, H), PAPER)
+        paper_bg(img)
+        _hayami_list(img, spec, spec["_rows"], len(spec["_rows"]))
+        return img
+    return build
+
+CAPTION_SHUSSAN_H = """【出産のお金 ぜんぶ一覧】
+
+📌 産休に入る前に、この1枚を保存しておいてください。
+
+出産でもらえるお金は、どれも【申請しないと受け取れません】。主なものを4つにまとめました。
+
+━━━━━━━━━━
+①【50万円】出産育児一時金
+加入している健康保険から、子ども1人につき50万円。
+直接支払制度を使えば病院に直接支払われるので、窓口でまとまったお金を用意せずに済みます。出産費用が50万円を下回ったときは、差額を申請すれば受け取れます。
+時効は出産日の翌日から2年です。
+
+②【給料の2/3】出産手当金
+会社員が産休を取ったときに、健康保険から。
+産前42日＋産後56日の最大98日分が対象です。産休が終わってからまとめて申請するのが一般的なので、産休に入ってすぐ入るわけではありません。
+時効は産休開始の翌日から2年。
+
+③【賃金の67%】育児休業給付金
+育休中に雇用保険から。最初の180日は67%、その後は50%になります。
+両親がそれぞれ14日以上取ると、最大28日間13%が上乗せされます(出生後休業支援給付金)。社会保険料の免除と合わせると、実質手取り10割相当になることもあります。
+ただし【2か月分ずつの申請】なので、育休に入ってしばらく入金がない期間があります。ここは生活費の見通しに直結するので気をつけてください。
+
+④【10万円】妊婦のための支援給付
+妊娠を届け出たときに5万円、出産後にこども1人につき5万円。
+双子なら出生時が10万円になります。受け取り方(現金かクーポンか)は市区町村によって違います。
+━━━━━━━━━━
+
+【見落としやすいこと】
+出産した年は医療費が10万円を超えやすいので、医療費控除も使えます。こちらは確定申告が必要で、5年さかのぼれます。
+
+─────────
+※金額・条件は加入している健康保険や自治体により異なります。
+出典:こども家庭庁／厚生労働省。申請前に勤務先・健康保険・市区町村でご確認ください。
+
+#出産準備 #プレママ #妊娠中 #臨月 #産休 #育休 #出産育児一時金 #出産手当金 #育児休業給付金 #新生児 #初マタ #お金の勉強 #家計管理 #子育て
+"""
+
+CAPTION_GAKUHI_H = """【学費の支援 ぜんぶ一覧・2026年度】
+
+📌 進学を決める前に、保存しておいてください。
+
+高校も大学も、支援は【申請しないと1円も出ません】。所得制限は撤廃されましたが、自動では始まらないのがいちばんの落とし穴です。
+
+━━━━━━━━━━
+①【11.9万円】公立高校の授業料
+高等学校等就学支援金から年11万8,800円。授業料相当額なので、実質的に無償になります。
+ただし自動では始まりません。入学時の4月に学校を通じて申請し、その後も毎年の継続手続きが必要です。オンライン申請システム「e-Shien」から手続きできます。
+
+②【45.7万円】私立高校の授業料
+2026年度から所得制限が撤廃され、私立の加算額も引き上げられました。
+【重要】このお金は保護者や生徒の口座には振り込まれません。学校が代わりに受け取り、授業料と相殺されます。通帳ではなく、学校からの授業料の請求額を見てください。
+
+③【70万円】私立大学の授業料
+扶養する子どもが3人以上の多子世帯なら、所得制限なしで授業料70万円・入学金26万円まで減免されます(国公立大なら授業料54万円・入学金28万円)。
+注意点は「扶養する子が3人以上」という条件です。上の子が就職して扶養から外れると、下の子が対象外になることがあります。きょうだいの年齢が離れている家庭ほど、事前に確認する価値があります。
+対象は大学・短大・高専・専門学校で、大学院は含まれません。
+
+④【返済不要】給付型奨学金
+高等教育の修学支援新制度。授業料等の減免と、返さなくていい奨学金がセットになっています。
+入口は高校3年の春(4月下旬ごろ)の「予約採用」です。進学後に申し込む「在学採用」は年2回。
+━━━━━━━━━━
+
+【授業料以外もあります】
+高校生等奨学給付金は、教材費や制服代など授業料以外の教育費が対象です(非課税世帯など)。金額は都道府県が設定します。
+
+─────────
+※上限額・条件は学校の種類や都道府県により異なります。
+出典:文部科学省。詳しくは学校・都道府県でご確認ください。
+
+#高校無償化 #大学無償化 #就学支援金 #教育費 #学費 #奨学金 #高校受験 #大学受験 #中学生ママ #高校生ママ #多子世帯 #お金の勉強 #家計管理 #子育て
+"""
+
+CAPTION_KIGEN_H = """【申請の期限 ぜんぶ一覧】
+
+📌 これは本当に保存しておいてください。過ぎたら取り戻せません。
+
+もらえるはずのお金が消える理由は、たいてい「知らなかった」ではなく「間に合わなかった」です。
+
+━━━━━━━━━━
+①【15日】児童手当 ← いちばん危ない
+出生・転入した日の【翌日から15日以内】。
+遅れた月の分はさかのぼって受け取れません。0〜2歳なら月1万5,000円、第3子以降なら月3万円が、1か月まるごと消えます。
+そして見落としやすいのが【里帰り出産】です。実家にいても、申請先は住民票のある市区町村です。実家の役所ではありません。
+
+②【2年】高額療養費
+診療した月の翌月1日から2年で時効。入院や帝王切開で高額を払った分が対象です。
+そもそもマイナ保険証を窓口で出せば、支払いが最初から上限額までで済みます。立て替えも、3か月以上の待ち時間も不要になります。
+
+③【2年】出産のお金
+出産育児一時金は出産日の翌日から2年、出産手当金は産休開始の翌日から2年。
+直接支払制度を使わなかった場合や、出産費用が50万円を下回って差額が出た場合は、申請しないと受け取れません。
+
+④【5年】医療費控除 ← 唯一さかのぼれる
+これだけは過去にさかのぼれます。
+出産した年の分をまだ申告していないなら、いまからでも間に合います。会社の年末調整ではできないので、確定申告が必要です。
+━━━━━━━━━━
+
+【まとめ】
+①だけは「今すぐ」の話です。②③は2年、④は5年。
+出産・引っ越しの直後は手続きが集中して抜けやすいので、この4つだけでも押さえておいてください。
+
+─────────
+※期限や取り扱いは加入している健康保険・自治体により異なる場合があります。
+出典:こども家庭庁／協会けんぽ／国税庁。詳しくは各窓口でご確認ください。
+
+#児童手当 #里帰り出産 #出産準備 #産後 #高額療養費 #医療費控除 #確定申告 #新生児 #プレママ #引っ越し #お金の勉強 #家計管理 #子育て #知らないと損
+"""
 
 
 CAPTION_KABE2 = """【年収の壁 ぜんぶ一覧・2026年版】
@@ -2247,7 +2445,7 @@ CAPTION_KABE2 = """【年収の壁 ぜんぶ一覧・2026年版】
 """
 
 
-COVER_CUSTOM = {"kabe-hayami": cover_kabe2}
+COVER_CUSTOM = {k: cover_hayami(k) for k in HAYAMI}
 
 COVERS = {
     "shinsei-list":  ("⚠️", "知らないと", "ずっと 0 円", "申請しないともらえないお金"),
@@ -2900,7 +3098,10 @@ REELS = [
     ("koko-furikomi",   "peach",    render_kokofurikomi, CAPTION_KOKOFURIKOMI, "未投稿"),
     ("jido-shikyubi",   "mint",     render_jidoshikyubi, CAPTION_JIDOSHIKYUBI, "未投稿"),
     ("matome-8",        "lavender", render_matome,       CAPTION_MATOME,       "未投稿"),
-    ("kabe-hayami",     "coral",    render_kabe2,        CAPTION_KABE2,        "未投稿"),
+    ("kabe-hayami",     "coral",    hayami("kabe-hayami"),    CAPTION_KABE2,     "未投稿"),
+    ("shussan-hayami",  "coral",    hayami("shussan-hayami"), CAPTION_SHUSSAN_H, "未投稿"),
+    ("gakuhi-hayami",   "coral",    hayami("gakuhi-hayami"),  CAPTION_GAKUHI_H,  "未投稿"),
+    ("kigen-hayami",    "coral",    hayami("kigen-hayami"),   CAPTION_KIGEN_H,   "未投稿"),
 ]
 
 
