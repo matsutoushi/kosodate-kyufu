@@ -1,7 +1,7 @@
 {
 "/": {
-"date": "2026-08-22",
-"hash": "b0652b033bc451760b1a1556a64858f6"
+"date": "2026-08-27",
+"hash": "a9a5a17f5d9084227a89e341e0cab202"
 },
 "/chiiki-list.html": {
 "date": "2026-08-21",
@@ -832,8 +832,8 @@
 "hash": "6333dc5ab897ff96e05237d9aaa0a4b3"
 },
 "/hikaku-furusato.html": {
-"date": "2026-08-21",
-"hash": "ccdc47cf971c35a72d5b91340a211ded"
+"date": "2026-08-27",
+"hash": "906d0fd3c8346b4d24c4ddcea16b3fab"
 },
 "/hikaku-kawanai.html": {
 "date": "2026-08-21",
@@ -894,6 +894,10 @@
 "/kodomo-iryohi.html": {
 "date": "2026-08-22",
 "hash": "4c8807fc890a9ddfd68f195dd30e492a"
+},
+"/kodomo-nisa.html": {
+"date": "2026-08-27",
+"hash": "62a8b496d0fb474000bb26662a6c13f8"
 },
 "/kogaku-ryoyohi.html": {
 "date": "2026-08-22",

@@ -1445,7 +1445,7 @@ def build_article(a, articles=()):
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
 {site_nav()}
 <div class="wrap body">
-  <a class="back" href="./hikaku-furusato.html">← ふるさと納税の比較へ</a>
+  <a class="back" href="{html.escape(a.get("back_href", "./hikaku-furusato.html"))}">← {html.escape(a.get("back_text", "ふるさと納税の比較へ"))}</a>
   {'<div class="pr">※本ページはプロモーションを含みます</div>' if a.get("pr", True) else ''}
   <h1 style="font-size:1.35rem;margin:.2em 0">{html.escape(a['title'])}</h1>
   <div class="s" style="margin:.2em 0 1em">最終更新: {html.escape(a.get('updated',''))}</div>
@@ -1460,6 +1460,14 @@ def build_article(a, articles=()):
             for it in s["list"]:
                 parts.append(f"<li>{html.escape(it)}</li>")
             parts.append("</ul>")
+        if s.get("table"):
+            tb = s["table"]
+            parts.append('<div class="tbwrap"><table class="tb"><thead><tr>')
+            parts.extend(f"<th>{html.escape(h)}</th>" for h in tb["head"])
+            parts.append("</tr></thead><tbody>")
+            for row in tb["rows"]:
+                parts.append("<tr>" + "".join(f"<td>{html.escape(c)}</td>" for c in row) + "</tr>")
+            parts.append("</tbody></table></div>")
         if s.get("note"):
             parts.append(f'<div class="note">📌 {html.escape(s["note"])}</div>')
 
