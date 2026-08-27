@@ -2201,10 +2201,23 @@ def hayami_row(no, key, what, cond, effect, warm):
     return lay
 
 
+P_ID = "#3A4A52"          # 肩書きピルの地色。毎回同じ位置・同じ色で出す
+ID_TEXT = "出典は国の公式資料"
+
+
+def brand_pills(d, badge=None):
+    """全リール共通の頭。肩書き→保存版→(文脈)の順で必ず同じ並びにする。"""
+    x = 74
+    x += pill(d, x, 150, ID_TEXT, P_ID) + 14
+    x += pill(d, x, 150, "保存版", P_WARM) + 14
+    # 文脈バッジは長いと画面からはみ出すので、収まるときだけ出す
+    if badge and x + d.textlength(badge, font=font(40)) + 44 < W - 74:
+        pill(d, x, 150, badge, "#5B8A94")
+
+
 def _hayami_list(img, spec, rows, shown):
     d = ImageDraw.Draw(img)
-    pill(d, 74, 150, "保存版", P_WARM)
-    pill(d, 236, 150, spec["badge"], "#5B8A94")
+    brand_pills(d, spec.get("badge"))
     paste_center(img, spec["_t1"], 340)
     paste_center(img, spec["_t2"], 476)
     paste_center(img, spec["_t3"], 586)
@@ -2256,6 +2269,7 @@ def hayami(name):
         def frame(t):
             img = Image.new("RGB", (W, H), PAPER)
             paper_bg(img)
+            brand_pills(ImageDraw.Draw(img), spec.get("badge"))
             if t < 4.0:
                 p = ease_out(min(1, t / 0.3))
                 paste_center(img, hk[0], 720, dy=int((1 - p) * 50))
