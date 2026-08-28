@@ -30,14 +30,30 @@ VC_SID = "3776805"
 CONTACT_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSdzkTiL7dqWmIKnurJG4bOQoQVJV8vbX6ttMS0GXp1yR0VrAA/viewform"
 OPERATOR_NAME = "こそだて給付ナビ 編集部"
 
+# 「家計を軽くする」まとめページに載せる比較ページと、その一言。
+# 見出しの「N つの見直し」はこの並びから数える。増やしたときに数字がずれないように。
+KAKEI_ORDER = ["hikaku-sim", "hikaku-net", "hikaku-denki", "hikaku-furusato",
+               "hikaku-kawanai", "hikaku-kyozai", "hikaku-card"]
+KAKEI_WHY = {
+    "hikaku-sim": "効果が大きく、一度やれば戻らない。まず手をつけるならここ。",
+    "hikaku-net": "引っ越しや育休のタイミングで要る。工事の可否で選択肢が変わる。",
+    "hikaku-denki": "生活を変えずに単価だけ下げられる。手続きもオンラインで完結。",
+    "hikaku-furusato": "実質2,000円の負担で、おむつや米など必ず使うものが届く。",
+    "hikaku-kyozai": "塾より費用を抑えたい家庭の選択肢。合うかどうかは試してから。",
+    "hikaku-card": "毎月必ず出ていく支出の支払い方を変えるだけ。",
+    "hikaku-kawanai": "短い期間しか使わないものは、買わずに済ませる手もある。",
+}
+KAKEI_N = len(KAKEI_ORDER)
+
+
 def related_card(prog_id=None, hikaku_pages=()):
     """制度ページ下部の導線。制度ごとに広告を紐づけると不自然になるため、
     「家計を軽くする」まとめページ1本に集約する。"""
     if not hikaku_pages:
         return ""
-    return """<div class="sec-title">もらうだけでなく、減らす</div>
+    return f"""<div class="sec-title">もらうだけでなく、減らす</div>
 <a class="card" href="./kakei.html">
-  <div class="t">🏠 家計を軽くする、5つの見直し</div>
+  <div class="t">🏠 家計を軽くする、{KAKEI_N}つの見直し</div>
   <div class="s">固定費は一度下げれば、効果がずっと続きます</div>
   <div class="d">ふるさと納税・通信費・電気ガス・教育費などをまとめました →</div>
 </a>"""
@@ -795,7 +811,7 @@ q.addEventListener('input', draw);
 
 def build_kakei(hikaku_pages):
     """「家計を軽くする」まとめページ。制度ページからの導線をここに集約する。"""
-    parts = [head(f"家計を軽くする、5つの見直し｜{SITE_NAME}",
+    parts = [head(f"家計を軽くする、{KAKEI_N}つの見直し｜{SITE_NAME}",
                   "子育て世帯が使える制度を確認したら、出ていくお金も見直してみませんか。ふるさと納税・通信費・電気ガス・教育費の考え方をまとめました。",
                   "/kakei.html")]
     parts.append(f"""
@@ -804,7 +820,7 @@ def build_kakei(hikaku_pages):
 <div class="wrap body">
   <a class="back" href="./index.html">← ホーム</a>
   <div class="pr">※本ページはプロモーションを含みます</div>
-  <h1 style="font-size:1.35rem;margin:.2em 0">家計を軽くする、5つの見直し</h1>
+  <h1 style="font-size:1.35rem;margin:.2em 0">家計を軽くする、{KAKEI_N}つの見直し</h1>
 
   <p>このサイトでは「もらえるお金」を中心に紹介しています。ただ、家計を楽にする方法は
   受け取ることだけではありません。<strong>出ていくお金を減らす</strong>という方向もあります。</p>
@@ -817,16 +833,7 @@ def build_kakei(hikaku_pages):
 
   <div class="sec-title">見直しの候補</div>""")
 
-    order = ["hikaku-sim", "hikaku-denki", "hikaku-furusato", "hikaku-kawanai",
-             "hikaku-kyozai", "hikaku-card"]
-    why = {
-        "hikaku-sim": "効果が大きく、一度やれば戻らない。まず手をつけるならここ。",
-        "hikaku-denki": "生活を変えずに単価だけ下げられる。手続きもオンラインで完結。",
-        "hikaku-furusato": "実質2,000円の負担で、おむつや米など必ず使うものが届く。",
-        "hikaku-kyozai": "塾より費用を抑えたい家庭の選択肢。合うかどうかは試してから。",
-        "hikaku-card": "毎月必ず出ていく支出の支払い方を変えるだけ。",
-        "hikaku-kawanai": "短い期間しか使わないものは、買わずに済ませる手もある。",
-    }
+    order, why = KAKEI_ORDER, KAKEI_WHY
     pages = {p["id"]: p for p in hikaku_pages}
     for i, pid in enumerate(order, 1):
         p = pages.get(pid)
@@ -844,6 +851,7 @@ def build_kakei(hikaku_pages):
     <li>まず<strong>通信費</strong>。家族分をまとめて見直すと効果が一番大きく出ます</li>
     <li>次に<strong>電気・ガス</strong>。使用量が多い家庭ほど差が出ます</li>
     <li><strong>ふるさと納税</strong>は年末に向けて。上限額の確認から始めてください</li>
+    <li><strong>自宅のネット回線</strong>は、引っ越しや育休が決まったときに。工事が要るかどうかで選択肢が変わります</li>
     <li>教育費とカードは、生活が落ち着いてからで構いません</li>
   </ul>
 
