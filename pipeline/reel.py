@@ -151,8 +151,13 @@ def bar_layer(text, note, T, w=900, h=150):
     d = ImageDraw.Draw(lay)
     d.rounded_rectangle([0, 0, w, h], radius=28, fill=T["soft"])
     d.rounded_rectangle([0, 0, 16, h], radius=8, fill=T["brand"])
-    d.text((48, 26), text, font=font(56), fill=T["ink"])
-    d.text((48, 92), note, font=font(36), fill=T["sub"])
+    # 枠からはみ出したら縮める。手で文字数を調整すると必ずどこかで溢れる
+    def fit(txt, size, floor):
+        while size > floor and d.textlength(txt, font=font(size)) > w - 68:
+            size -= 2
+        return font(size)
+    d.text((48, 26), text, font=fit(text, 56, 34), fill=T["ink"])
+    d.text((48, 92), note, font=fit(note, 36, 24), fill=T["sub"])
     return lay
 
 
@@ -452,12 +457,20 @@ def hbar_layer(label, value, maxv, T, w=900, h=118, unit="人"):
     return lay
 
 
+def _fit_w(txt, size, floor, limit):
+    """limit 幅に収まるフォントサイズを返す。溢れた文字が画面外に出るのを防ぐ。"""
+    probe = ImageDraw.Draw(Image.new("RGB", (10, 10)))
+    while size > floor and probe.textlength(txt, font=font(size)) > limit:
+        size -= 2
+    return size
+
+
 def cta_save(T, line1, line2):
     """終盤の共通CTA。実測でプロフィール遷移が0だったため、
     2段階の「プロフィール→リンク」ではなく1タップで済む『保存』を主役にする。"""
     return {
         "em": emoji_layer("🔖", 150),
-        "l1": text_layer(line1, font(56), T["sub"]),
+        "l1": text_layer(line1, font(_fit_w(line1, 56, 34, W - 120)), T["sub"]),
         "l2": text_layer(line2, font(80), T["ink"]),
         "sub": text_layer("くわしくは プロフィールのリンクから", font(44), T["sub"]),
         "brand": text_layer("@こそだて給付ナビ", font(44), T["sub"]),
@@ -2485,6 +2498,10 @@ COVERS = {
     "koko-furikomi":   ("🎓", "高校無償化のお金は", "口座に入りません", "学校が代わりに受け取ります"),
     "jido-shikyubi":   ("🗓️", "児童手当は", "毎月もらえません", "偶数月に2か月分ずつ"),
     "matome-8":        ("📌", "知らないと損する", "子育てのお金 8", "保存版・1枚にまとめました"),
+    "nenkin-ikuji":    ("💴", "自営業の親は", "国民年金が免除されます", "2026年10月から・最大13か月"),
+    "kogaku-2nen":     ("⏳", "2年前の入院費", "いまからでも戻ります", "高額療養費はさかのぼれます"),
+    "shitsugyo-4nen":  ("🕰️", "出産で辞めた人の", "失業保険は4年待てます", "受給期間は延長できます"),
+    "iryohi-5nen":     ("🧾", "医療費控除は", "去年の分だけじゃない", "5年さかのぼれます"),
 }
 
 
@@ -3087,6 +3104,394 @@ CAPTION_MATOME = """【放置すると消えるお金 6つ】
 """
 
 
+
+def build_cover(T, em, line1, line2, sub):
+    """カバー画像(1080x1920)。動画の1フレーム目ではなく、これを投稿時に指定する。
+    絵文字1つ+2行+補足。数字や表は載せない。"""
+    img = Image.new("RGB", (W, H), T["bg"])
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, W, 14], fill=T["brand"])
+    d.rectangle([0, H - 14, W, H], fill=T["brand"])
+    d.rounded_rectangle([72, 556, W - 72, 1341], radius=48, fill=T["soft"])
+    paste_center(img, emoji_layer(em, 180), 672)
+    paste_center(img, text_layer(line1, font(86), T["ink"]), 880)
+    # 2行目は主役。幅からはみ出す長さのときだけ落とす
+    size = 104
+    while size > 62 and d.textlength(line2, font=font(size)) > W - 220:
+        size -= 4
+    paste_center(img, text_layer(line2, font(size), T["brand_d"]), 1050)
+    paste_center(img, text_layer(sub, font(50), T["sub"]), 1240)
+    paste_center(img, text_layer("こそだて給付ナビ", font(52), T["sub"]), 1400)
+    return img
+
+
+# --- 単一テーマ型(ストーリー構成) -----------------------------------------
+# 2026-08の実測で、9万ビューを取った1本(iryohi-kojo)と早見表4本(いずれも3,000以下)が
+# はっきり分かれた。当たった側だけが持っていたのは
+#   ①一覧ではなく単一テーマ ②「すでに払ったお金が戻る」構造
+#   ③該当するかを一瞬で判定できる限定 ④カバーは絵文字1つ+2行で数字を載せない
+# の4点。当たった構成(7シーン)をそのまま仕様にして、dictを足すだけで増やせる形にする。
+# シーン種別は bars(箇条3つ or 2つ) / big(大きな数字) / count(モデルケース+カウントアップ)。
+STORY = {}
+
+
+def _story_dur(spec):
+    """シーンの尺を仕様から積む。bars は行数で変える(3行=6.6秒 / 2行=6.0秒)。"""
+    t = 3.0
+    for s in spec["scenes"]:
+        if s["type"] == "bars":
+            t += 6.6 if len(s["rows"]) >= 3 else 6.0
+        elif s["type"] == "big":
+            t += 6.0
+        else:
+            t += 9.0
+    return t + 5.0
+
+
+def _story_prepare(spec, T):
+    """レイヤは1度だけ作る(フレームごとに作ると極端に遅くなる)。"""
+    p = {
+        "em": emoji_layer(spec["emoji"], 200),
+        "hook": text_layer(spec["hook"], font(spec.get("hook_size", 78)), T["ink"]),
+        "cta": cta_save(T, *spec["cta"]),
+        "scenes": [],
+    }
+    for s in spec["scenes"]:
+        o = {"type": s["type"], "title": text_layer(s["title"], font(56), T["sub"])}
+        if s["type"] == "bars":
+            o["rows"] = [bar_layer(a, b, T) for a, b in s["rows"]]
+        elif s["type"] == "big":
+            o["big"] = text_layer(s["big"], font(s.get("big_size", 80)), T["brand_d"])
+            o["sub"] = text_layer(s["sub"], font(48), T["sub"])
+            o["note"] = text_layer(s["note"], font(52), T["ink"])
+        else:
+            o["rows"] = [bar_layer(a, b, T) for a, b in s["rows"]]
+            o["lead"] = text_layer(s["lead"], font(52), T["sub"])
+            o["value"] = s["value"]
+            o["unit"] = s.get("unit", "円")
+        p["scenes"].append(o)
+    return p
+
+
+def story(name):
+    """STORY[name] から frame 関数を作る。返り値は render_* と同じ (frame, dur)。"""
+    def build(T):
+        spec = STORY[name]
+        p = _story_prepare(spec, T)
+        cf = font(140)
+        # 各シーンの開始時刻を先に決めておく
+        marks, t = [], 3.0
+        for s in spec["scenes"]:
+            d = 6.6 if s["type"] == "bars" and len(s["rows"]) >= 3 else \
+                6.0 if s["type"] in ("bars", "big") else 9.0
+            marks.append((t, t + d))
+            t += d
+        cta_at = t
+        total = t + 5.0
+
+        def frame(tm):
+            img = Image.new("RGB", (W, H), T["bg"])
+            d = ImageDraw.Draw(img)
+            d.rectangle([0, 0, W, 14], fill=T["brand"])
+            d.rectangle([0, H - 14, W, H], fill=T["brand"])
+            if tm < 3.0:
+                q = ease_out(min(1, tm / 0.35))
+                paste_center(img, p["em"], 660, dy=int((1 - q) * 40))
+                paste_center(img, p["hook"], 1010, dy=int((1 - q) * 55))
+                return img
+            if tm >= cta_at:
+                draw_cta(img, p["cta"], tm - cta_at)
+                return img
+            for (st, en), o in zip(marks, p["scenes"]):
+                if not (st <= tm < en):
+                    continue
+                tt = tm - st
+                if o["type"] == "bars":
+                    three = len(o["rows"]) >= 3
+                    paste_center(img, o["title"], 430 if three else 480,
+                                 alpha=ease_out(min(1, tt / 0.4)))
+                    step = 1.25 if three else 1.3
+                    top = 680 if three else 750
+                    for i, b in enumerate(o["rows"]):
+                        s0 = 0.4 + i * step
+                        if tt < s0:
+                            break
+                        q = ease_out(min(1, (tt - s0) / 0.4))
+                        paste_at(img, b, 90, top + i * 210, alpha=q, dx=int((1 - q) * -70))
+                elif o["type"] == "big":
+                    paste_center(img, o["title"], 560, alpha=ease_out(min(1, tt / 0.4)))
+                    if tt > 0.4:
+                        pp = min(1, (tt - 0.4) / 0.35)
+                        sc = 1.3 - 0.3 * ease_out(pp)
+                        z = o["big"].resize((int(o["big"].width * sc), int(o["big"].height * sc)))
+                        paste_center(img, z, 790, alpha=pp)
+                    if tt > 1.2:
+                        paste_center(img, o["sub"], 960, alpha=ease_out(min(1, (tt - 1.2) / 0.4)))
+                    if tt > 2.2:
+                        paste_center(img, o["note"], 1190, alpha=ease_out(min(1, (tt - 2.2) / 0.5)))
+                else:
+                    paste_center(img, o["title"], 430, alpha=ease_out(min(1, tt / 0.4)))
+                    for i, b in enumerate(o["rows"]):
+                        s0 = 0.4 + i * 1.1
+                        if tt < s0:
+                            break
+                        q = ease_out(min(1, (tt - s0) / 0.4))
+                        paste_at(img, b, 90, 660 + i * 200, alpha=q, dx=int((1 - q) * -70))
+                    if tt > 4.0:
+                        paste_center(img, o["lead"], 1250, alpha=ease_out(min(1, (tt - 4.0) / 0.4)))
+                        cp = ease_out(min(1, max(0.0, (tt - 4.4) / 2.0)))
+                        txt = f"{int(o['value'] * cp):,} {o['unit']}"
+                        tw = d.textlength(txt, font=cf)
+                        d.text(((W - tw) / 2, 1320), txt, font=cf, fill=T["brand_d"])
+            return img
+
+        return frame, total
+    return build
+
+
+STORY["nenkin-ikuji"] = {
+    "emoji": "\U0001F4B4",
+    "hook": "自営業の親は\n国民年金が免除されます",
+    "cta": ("自営業やフリーランスの人に送ってください", "保存 して送る"),
+    "scenes": [
+        {"type": "bars", "title": "2026年10月に始まります", "rows": [
+            ("新しくできる制度", "国民年金保険料の 育児期間の免除"),
+            ("始まるのは", "2026年(令和8年)10月から"),
+            ("対象になる人", "国民年金の第1号被保険者(自営業・フリーランスなど)"),
+        ]},
+        {"type": "big", "title": "何か月ぶん免除されるか",
+         "big": "お母さん 最大 13 か月", "big_size": 76,
+         "sub": "産前産後の4か月＋育児の9か月",
+         "note": "お父さんは最大12か月。夫婦とも対象です"},
+        {"type": "count", "title": "いくらぶんになるか", "rows": [
+            ("令和8年度の保険料", "月 17,920円"),
+            ("お母さん 13か月ぶん", "232,960円"),
+            ("お父さん 12か月ぶん", "215,040円"),
+        ], "lead": "夫婦とも自営業なら", "value": 448000},
+        {"type": "bars", "title": "つまずきやすい2つ", "rows": [
+            ("会社員と扶養の配偶者は対象外", "第2号・第3号には別の免除があります"),
+            ("届出が必要です", "自動では免除されません"),
+        ]},
+        {"type": "bars", "title": "ここがいちばん大事", "rows": [
+            ("免除でも年金は減りません", "納付したものとして老齢基礎年金に反映されます"),
+            ("産前産後の免除は今もあります", "出産予定日の6か月前から届け出できます"),
+        ]},
+    ],
+}
+
+STORY["kogaku-2nen"] = {
+    "emoji": "⏳",
+    "hook": "2年前の入院費\nいまからでも戻ります",
+    "cta": ("入院の予定がある人に送ってください", "保存 して送る"),
+    "scenes": [
+        {"type": "bars", "title": "高額療養費という制度です", "rows": [
+            ("同じ月の医療費が上限を超えたら", "超えた分が戻ってきます"),
+            ("上限は標準報酬月額で決まります", "28〜50万円なら 85,800円＋α"),
+            ("同じ月・同じ世帯なら合算できます", "きょうだいの分もまとめられます"),
+        ]},
+        {"type": "big", "title": "いつまでさかのぼれるか",
+         "big": "2 年", "big_size": 150,
+         "sub": "診療を受けた月の翌月1日から2年",
+         "note": "その月の分は、いまからでも請求できます"},
+        {"type": "count", "title": "たとえば、子どもが入院した月", "rows": [
+            ("保険診療の総額", "50万円"),
+            ("窓口で払った3割", "150,000円"),
+            ("上限額(標準報酬月額28〜50万円)", "87,940円"),
+        ], "lead": "あとから戻るのは", "value": 62060},
+        {"type": "bars", "title": "つまずきやすい2つ", "rows": [
+            ("月をまたぐと合算できません", "同じ月(1日〜末日)の中で数えます"),
+            ("差額ベッド代と食事代は対象外", "保険診療の自己負担だけが対象です"),
+        ]},
+        {"type": "bars", "title": "知っておくと効く2つ", "rows": [
+            ("4回目からは下がります", "直近12か月で3回超えたら 44,400円に"),
+            ("次からは立て替えなしに", "マイナ保険証か限度額適用認定証で窓口が上限までに"),
+        ]},
+    ],
+}
+
+STORY["shitsugyo-4nen"] = {
+    "emoji": "\U0001F570️",
+    "hook": "出産で辞めた人の\n失業保険は4年待てます",
+    "cta": ("出産で仕事を辞めた人に送ってください", "保存 して送る"),
+    "scenes": [
+        {"type": "bars", "title": "よくある3つの勘違い", "rows": [
+            ("妊娠で辞めたからもらえない", "すぐ働けないだけで、権利は消えていません"),
+            ("1年たったら消える", "延長すれば最長4年まで延びます"),
+            ("もう遅い", "延長後の期間の最後の日までなら申請できます"),
+        ]},
+        {"type": "big", "title": "どこまで延ばせるか",
+         "big": "4 年", "big_size": 150,
+         "sub": "本来は 離職日の翌日から1年",
+         "note": "働けない期間を足して 最長4年まで"},
+        {"type": "bars", "title": "どういう条件か", "rows": [
+            ("妊娠・出産・育児などで", "引き続き30日以上働けないこと"),
+            ("延ばせるのは", "本来の1年＋最大3年"),
+            ("不妊治療から続いた場合も", "妊娠・出産・育児と連続して延長できます"),
+        ]},
+        {"type": "bars", "title": "つまずきやすい2つ", "rows": [
+            ("延長しても給付日数は増えません", "受け取れる日数そのものは変わりません"),
+            ("申請が遅れると減ることが", "所定給付日数の全部を受給できない場合があります"),
+        ]},
+        {"type": "bars", "title": "やることは2つ", "rows": [
+            ("ハローワークに延長を申請", "住んでいる場所を管轄するハローワークです"),
+            ("働ける状態になってから受給", "求職の申し込みをして受け取り始めます"),
+        ]},
+    ],
+}
+
+STORY["iryohi-5nen"] = {
+    "emoji": "\U0001F9FE",
+    "hook": "医療費控除は\n去年の分だけじゃありません",
+    "cta": ("去年もその前も出していない人へ", "保存 しておく"),
+    "scenes": [
+        {"type": "big", "title": "いつまでさかのぼれるか",
+         "big": "5 年", "big_size": 150,
+         "sub": "その年の翌年1月1日から5年間",
+         "note": "5年前の分まで、いまから出せます"},
+        {"type": "bars", "title": "見落としやすい3つ", "rows": [
+            ("通院の交通費", "電車・バス代。記録があれば対象です"),
+            ("子どもの歯列矯正", "発育のために必要と認められる場合"),
+            ("市販薬", "治療のために買った分は対象です"),
+        ]},
+        {"type": "bars", "title": "こちらは対象になりません", "rows": [
+            ("自家用車のガソリン代・駐車場代", "通院でも対象外です"),
+            ("予防のためのサプリ・健康診断", "病気が見つかって治療した場合を除きます"),
+            ("里帰り出産の帰省費用", "通院のための交通費ではありません"),
+        ]},
+        {"type": "count", "title": "たとえば、3年前のこんな年", "rows": [
+            ("子どもの入院と家族の通院で", "年間 300,000円"),
+            ("10万円を引いた控除額", "200,000円"),
+            ("所得税率10%の人なら", "20,000円"),
+        ], "lead": "この年の分だけで戻るのは", "value": 20000},
+        {"type": "bars", "title": "つまずきやすい2つ", "rows": [
+            ("年末調整ではできません", "会社員でも自分で確定申告が必要です"),
+            ("共働きは所得が高いほうで", "税率が高いほど戻る額が大きくなります"),
+        ]},
+    ],
+}
+
+
+CAPTION_NENKIN_IKUJI = """【2026年10月から、自営業の親は国民年金が免除されます】
+
+来月からの新しい制度です。まだほとんど知られていません。
+
+▶ 対象は 国民年金の第1号被保険者(自営業・フリーランス・学生など)
+▶ お母さん 最大13か月(産前産後4か月＋育児9か月)
+▶ お父さん 最大12か月(養育を始めた月〜1歳の誕生日の前月)
+▶ 夫婦とも対象です
+
+令和8年度の保険料は月17,920円。
+お母さん13か月で232,960円、お父さん12か月で215,040円。
+夫婦とも自営業なら、合わせて448,000円ぶんになります。
+
+そしていちばん大事なのは、免除でも年金が減らないこと。
+免除された期間も「納付したもの」として老齢基礎年金に反映されます。
+
+ただし、届出が必要です。自動では免除されません。
+会社員と扶養に入っている配偶者(第2号・第3号)は、この制度ではなく別の免除があります。
+
+産前産後の免除は今もあり、出産予定日の6か月前から届け出できます。
+出産後でも届け出できます。
+
+自営業やフリーランスで子育て中の人に、そのまま送ってあげてください📌
+
+※出典:日本年金機構。制度の詳細は開始時期に合わせて更新される場合があります。手続きの前に必ず日本年金機構とお住まいの市区町村でご確認ください。
+
+#国民年金 #自営業 #フリーランス #個人事業主 #保険料免除 #子育て #育児 #出産準備 #プレママ #新米ママ #年金 #家計管理 #お金の勉強 #知らないと損 #2026年10月
+"""
+
+CAPTION_KOGAKU_2NEN = """【2年前の入院費、いまからでも戻ります】
+
+高額療養費は、あとからでも申請できます。
+時効は「診療を受けた月の翌月1日から2年」。
+その月の分なら、今からでも請求できます。
+
+▶ 同じ月の医療費が上限を超えたら、超えた分が戻る
+▶ 上限は標準報酬月額で決まる(28〜50万円なら 85,800円＋α)
+▶ 同じ月・同じ世帯なら合算できる(きょうだいの分も)
+
+たとえば子どもが入院して、保険診療の総額が50万円だった月。
+窓口で払う3割は150,000円。上限額は87,940円。
+差額の62,060円が、あとから戻ります。
+
+つまずきやすいのはこの2つ。
+・月をまたぐと合算できません(同じ月の1日〜末日で数えます)
+・差額ベッド代と食事代は対象外です
+
+そして知っておくと効くのがこの2つ。
+・直近12か月で3回超えたら、4回目からは44,400円に下がります
+・マイナ保険証か限度額適用認定証があれば、次からは窓口の支払いが最初から上限まで。立て替えが要りません
+
+入院の予定がある人に送っておいてください📌
+
+※金額は2026年8月診療分からの自己負担限度額(70歳未満)です。区分は年収ではなく標準報酬月額で決まります。出典:協会けんぽ。申請前に加入している健康保険でご確認ください。
+
+#高額療養費 #入院 #医療費 #子どもの入院 #帝王切開 #切迫早産 #子育て #育児 #ママ #限度額適用認定証 #マイナ保険証 #家計管理 #お金の勉強 #知らないと損 #保存版
+"""
+
+CAPTION_SHITSUGYO_4NEN = """【出産で辞めた人の失業保険は、4年待てます】
+
+「妊娠で辞めたからもらえない」
+これがいちばん多い勘違いです。
+
+失業給付は「すぐ働ける人」が対象なので、
+妊娠・出産の時期はそのままでは受け取れません。
+でも権利が消えたわけではなく、待つことができます。
+
+▶ 本来の受給期間は 離職日の翌日から1年
+▶ 妊娠・出産・育児などで引き続き30日以上働けないなら、その分を足せる
+▶ 最長で 離職日の翌日から4年(1年＋最大3年)
+▶ 不妊治療から続けて、妊娠・出産・育児と連続して延長することもできます
+
+申請は、延長後の受給期間の最後の日までなら可能です。
+ただし遅くなるほど、所定給付日数の全部を受け取れない可能性があります。
+思い出した時点で動くのが確実です。
+
+延長しても、もらえる日数そのものは増えません。
+「受け取れる期間を後ろにずらす」制度です。
+
+やることは2つ。
+①住んでいる場所を管轄するハローワークに延長を申請する
+②働ける状態になってから、求職の申し込みをして受け取り始める
+
+出産で仕事を辞めた人に、そのまま送ってあげてください📌
+
+※出典:厚生労働省。個別の条件はハローワークの判断になります。手続きの前に住居所を管轄するハローワークでご確認ください。
+
+#失業保険 #失業給付 #雇用保険 #受給期間延長 #ハローワーク #出産退職 #退職 #妊娠 #出産 #子育て #育児 #ママ #家計管理 #お金の勉強 #知らないと損
+"""
+
+CAPTION_IRYOHI_5NEN = """【医療費控除は、去年の分だけじゃありません】
+
+還付申告は「その年の翌年1月1日から5年間」。
+5年前の分まで、いまから出せます。
+
+見落としやすいのはこの3つ。
+▶ 通院の交通費(電車・バス代。記録があれば対象)
+▶ 子どもの歯列矯正(発育のために必要と認められる場合)
+▶ 市販薬(治療のために買った分)
+
+逆に、これは対象になりません。
+・自家用車のガソリン代と駐車場代
+・予防のためのサプリと健康診断(病気が見つかって治療した場合を除く)
+・里帰り出産の帰省費用
+
+たとえば3年前、子どもの入院と家族の通院で年間30万円かかった年。
+10万円を引いた20万円が控除額になり、
+所得税率10%の人なら約20,000円が戻ります。
+住民税も下がります。
+
+つまずきやすいのはこの2つ。
+・年末調整ではできません。会社員でも自分で確定申告が必要です
+・共働きなら所得が高いほうで。税率が高いほど戻る額が大きくなります
+
+去年もその前も出していない人は、保存しておいてください📌
+
+※総所得が200万円未満の場合は「10万円」ではなく所得の5%が基準になります。出典:国税庁。申告の前に国税庁のページと所轄の税務署でご確認ください。
+
+#医療費控除 #確定申告 #還付申告 #還付金 #歯列矯正 #子育て #育児 #ママ #節約 #家計管理 #お金の勉強 #知らないと損 #保存版 #税金 #子どもの医療費
+"""
+
 REELS = [
     # (名前, テーマ, 描画関数, キャプション, 状態)
     ("018support",      "mint",     render_018,        CAPTION_018,       "投稿済み"),
@@ -3116,6 +3521,10 @@ REELS = [
     ("shussan-hayami",  "coral",    hayami("shussan-hayami"), CAPTION_SHUSSAN_H, "未投稿"),
     ("gakuhi-hayami",   "coral",    hayami("gakuhi-hayami"),  CAPTION_GAKUHI_H,  "未投稿"),
     ("kigen-hayami",    "coral",    hayami("kigen-hayami"),   CAPTION_KIGEN_H,   "未投稿"),
+    ("nenkin-ikuji",    "mint",     story("nenkin-ikuji"),   CAPTION_NENKIN_IKUJI,   "未投稿"),
+    ("kogaku-2nen",     "coral",    story("kogaku-2nen"),    CAPTION_KOGAKU_2NEN,    "未投稿"),
+    ("shitsugyo-4nen",  "lavender", story("shitsugyo-4nen"), CAPTION_SHITSUGYO_4NEN, "未投稿"),
+    ("iryohi-5nen",     "navy",     story("iryohi-5nen"),    CAPTION_IRYOHI_5NEN,    "未投稿"),
 ]
 
 
@@ -3182,6 +3591,10 @@ def write_index():
         "shotoku-seigen": "医療費助成の所得制限は49自治体だけ",
         "fuyo-kojo": "16歳未満に扶養控除はない",
         "hitorioya": "ひとり親の手当・助成・控除",
+        "nenkin-ikuji": "国民年金の育児免除(2026年10月開始)",
+        "kogaku-2nen": "高額療養費は2年さかのぼれる",
+        "shitsugyo-4nen": "出産退職の失業保険は4年待てる",
+        "iryohi-5nen": "医療費控除は5年さかのぼれる",
     }
     for i, (name, _t, _f, _c, status) in enumerate(REELS, 1):
         lines.append(f"| {i:02d} | `{i:02d}-{name}/` | {NOTE.get(name, '')} | {status} |")
