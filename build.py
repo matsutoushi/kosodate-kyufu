@@ -917,7 +917,11 @@ def build_city(c, iry_map, taiki_map, rank_map):
         else:
             parts.append('<p style="font-size:.9rem;color:var(--sub)">直近の調査では、希望しても入れなかった児童はいませんでした。ただし年度途中の入園は別なので、市の窓口で空き状況をご確認ください。</p>')
 
-    parts.append(f'<div class="sec-title">💰 {html.escape(c["city"])}の支援制度</div>')
+    # 自動生成のページは programs が空なので、見出しだけ出て中身が無い状態になっていた。
+    # 見出しの文言を「調べ方の案内」に変えて、下の公式サイトボタンにつなげる。
+    parts.append('<div class="sec-title">💰 {}</div>'.format(
+        html.escape(c["city"]) + ("の支援制度" if c.get("programs")
+                                  else "が独自に出しているお金を調べる")))
     if c.get("own_note"):
         parts.append(f'<div class="note">🔍 {html.escape(c["own_note"])}</div>')
     for p in c["programs"]:
@@ -1657,7 +1661,12 @@ def main():
         # 手作業の独自制度は無いが、医療費助成・待機児童の年齢別内訳・県内順位は
         # 一次データから出せる。競合が「自治体によります」で済ませている領域なので、
         # ロングテールの検索に対して意味のあるページになる。
-        AUTO_N = 200
+        # 200件で頭打ちにしていたが、公開したページは2日ほどで自動的にインデックスされる
+        # 状態になった(2026-09-02のGSC実測。実在する200件は最下位の青梅市まで登録済み)。
+        # 制約は「Googleが拾うか」ではなく「ページがあるか」に移ったので上限を上げる。
+        # 一気に1,740件にはしない。同じテンプレの自動生成を大量に増やすのは薄いページの
+        # 量産と見なされる恐れがあるため、まず500件にして追加分が表示を取れるか観測する。
+        AUTO_N = 500
         have = {(c["pref"], c["city"]) for c in cj["cities"]}
         pool = [t for t in _tk
                 if (t["pref"], t["city"]) in iry_map and (t["pref"], t["city"]) not in have]
