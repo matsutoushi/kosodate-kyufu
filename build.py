@@ -868,6 +868,54 @@ def build_kakei(hikaku_pages):
     return "".join(parts)
 
 
+def city_meta(c, med, tk, rank):
+    """自治体ページの <title> と meta description を、そのページが実際に持っている
+    数字から組み立てる。
+
+    直す前は全ページ共通で「市独自の給付金・助成金・補助金・支援金をまとめました」と
+    書いていた。自動生成のページに市独自の制度は入っていないので、これは検索結果に
+    出る説明文だけが嘘をついている状態だった(本文には「含まれていません」と書いてある)。
+
+    もうひとつ、GSCの実測で「中野区 子育て 補助金」8.6位・「白山市 子育て支援」9.3位と
+    1ページ目に出ているのにCTRが0%だった。順位の問題ではなく、検索結果に出ている
+    文言がどこのサイトとも同じで選ばれていない。このサイトだけが持っている数字
+    (何歳まで・所得制限と自己負担の有無・県内順位・待機児童)を出して差をつける。
+    """
+    name = f'{c["pref"]}{c["city"]}'
+    free = bool(med) and not med["limit_out"] and not med["copay_out"]
+
+    # タイトルは検索語(子育て支援/助成金)を残しつつ、末尾を屋号ではなく事実にする。
+    # 所得制限も自己負担も無いときだけ「無料」と書く。どちらかでもあれば「助成」。
+    if med:
+        tail = f'医療費は{med["age_out"]}まで{"無料" if free else "助成"}'
+        # 検索結果は32文字あたりで切られる。末尾の「無料/助成」がいちばん効くので、
+        # 長い自治体名のときは頭のキーワードのほうを削って尻を残す。
+        for head_part in ("の子育て支援・助成金", "の子育て支援", ""):
+            title = f"{name}{head_part}｜{tail}"
+            if len(title) <= 32:
+                break
+    else:
+        title = f"{name}の子育て支援・助成金・補助金｜{SITE_NAME}"
+
+    bits = []
+    if med:
+        span = (f'通院・入院とも{med["age_out"]}まで'
+                if med["age_out"] == med["age_in"]
+                else f'通院{med["age_out"]}・入院{med["age_in"]}まで')
+        bits.append(f'{name}の子ども医療費助成は{span}、'
+                    f'{"所得制限あり" if med["limit_out"] else "所得制限なし"}・'
+                    f'{"自己負担あり" if med["copay_out"] else "自己負担なし"}。')
+        if rank:
+            bits.append(f'{c["pref"]}内{rank[1]}市区町村中{rank[0]}位。')
+    if tk:
+        bits.append(f'待機児童{tk["wait"]}人(申込{tk["apply"]:,}人)。')
+    # 市独自の制度を手で登録しているページだけ、そう名乗る
+    bits.append("市独自の給付金もまとめました。" if c.get("programs")
+                else "児童手当など全国共通の制度も確認できます。")
+    desc = "".join(bits) or f"{name}の子育て支援をまとめました。"
+    return title, desc
+
+
 def build_city(c, iry_map, taiki_map, rank_map):
     """自治体ページ。全国データ(医療費・保育園)＋手作業で調べた市独自の支援。"""
     key = (c["pref"], c["city"])
@@ -876,10 +924,8 @@ def build_city(c, iry_map, taiki_map, rank_map):
     rank = rank_map.get(key)
     name = f'{c["pref"]}{c["city"]}'
 
-    parts = [head(f"{name}の子育て支援・助成金・補助金｜{SITE_NAME}",
-                  f"{name}の子ども医療費助成(子供医療費)、保育園の待機児童、"
-                  f"市独自の給付金・助成金・補助金・支援金をまとめました。",
-                  f"/{c['id']}.html")]
+    _title, _desc = city_meta(c, med, tk, rank)
+    parts = [head(_title, _desc, f"/{c['id']}.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
 {site_nav()}
