@@ -144,6 +144,11 @@ header.site .tag{font-size:.82rem;color:#8a5a44;margin-top:4px}
 .prog dt{font-weight:800;font-size:.82rem;color:var(--accent);margin-top:14px;letter-spacing:.02em}
 .prog dd{margin:3px 0 0;font-size:.95rem}
 .amount{background:#fff5ef;border:1px dashed var(--brand);border-radius:12px;padding:12px 14px;margin:12px 0;font-weight:700}
+.ngrp{font-size:.82rem;font-weight:800;color:var(--sub);margin:14px 0 6px}
+.nrow{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;margin-bottom:6px;text-decoration:none;color:inherit}
+.nname{display:block;font-weight:800;font-size:.94rem}
+.nnote{display:block;font-size:.82rem;color:var(--sub);margin-top:2px}
 .note{background:#f4faf9;border-left:4px solid var(--accent);padding:10px 12px;border-radius:8px;font-size:.86rem;color:#4a6a66;margin-top:14px}
 .offbtn{display:inline-block;margin-top:16px;border:2px solid var(--brand);color:var(--brand-d);
   font-weight:700;padding:10px 18px;border-radius:999px;font-size:.9rem}
@@ -868,6 +873,63 @@ def build_kakei(hikaku_pages):
     return "".join(parts)
 
 
+# 自治体ページに置く「全国共通の制度」の早見。
+#
+# GSCの実測で「佐世保 育児休業給付金 申請」が10.4位・41表示・0クリックだった。
+# 自治体ページが表示されているのに、そのページに育休給付金のことが1行も無い。
+# 来ても答えが無いので戻られている。
+#
+# ここで効くのは金額より【どこに出すか】。自治体名で検索して来た人は市役所に
+# 行けばいいと思っているが、育休給付金は勤務先経由でハローワーク、出産育児一時金は
+# 健康保険、就学支援金は高校と、市役所では受け付けない。この振り分けが答えになる。
+#
+# 金額は programs.json が正だが、表に入れるには長すぎるので短縮形を持つ。
+# id が変わったら気づけるように、ビルド時に存在チェックする。
+NATIONAL = [
+    ("市区町村の窓口に出すもの", [
+        ("jido-teate", "0〜2歳は月1.5万円、3歳〜高校生は月1万円（第3子以降は一律月3万円）"),
+        ("ninpu-shien-kyufu", "妊娠時に5万円＋胎児の数×5万円"),
+    ]),
+    ("市区町村ではなく、勤務先や健康保険に出すもの", [
+        ("ikuji-kyugyo-kyufu", "賃金の67%（181日目から50%）／勤務先を通じてハローワークへ"),
+        ("shussan-teate", "標準報酬日額の2/3×最大98日／勤務先または健康保険へ"),
+        ("shussan-ichijikin", "子ども1人につき50万円／健康保険へ（多くは病院が代行）"),
+        ("kogaku-ryoyohi", "1か月の上限を超えた分／健康保険へ"),
+    ]),
+    ("学校を通して出すもの", [
+        ("koko-shushi-kin", "公立は年11万8,800円、私立は上限年45万7,200円／高校のe-Shienから"),
+    ]),
+]
+
+_NATIONAL_HTML = None
+
+
+def national_block(city, progs):
+    """全国共通の制度の早見。自治体ページの下部に置く。
+    全ページ同じ内容になるので、長い解説は入れずに表だけにとどめる。"""
+    global _NATIONAL_HTML
+    if _NATIONAL_HTML is None:
+        titles = {p["id"]: p["title"] for p in progs}
+        rows = []
+        for group, items in NATIONAL:
+            rows.append(f'<div class="ngrp">{html.escape(group)}</div>')
+            for pid, note in items:
+                # programs.json 側で id を変えたらここで落として気づけるようにする
+                assert pid in titles, f"national_block: 未知のプログラム id {pid}"
+                rows.append(
+                    f'<a class="nrow" href="./{pid}.html">'
+                    f'<span class="nname">{html.escape(titles[pid])}</span>'
+                    f'<span class="nnote">{html.escape(note)}</span></a>')
+        _NATIONAL_HTML = "".join(rows)
+    return (f'<div class="sec-title">📋 {html.escape(city)}に住んでいても、'
+            f'国の制度は全国同じです</div>'
+            f'<p style="font-size:.9rem;color:var(--sub);margin:0 0 10px">'
+            f'金額はどこに住んでいても変わりません。変わるのは'
+            f'<strong>どこに申請するか</strong>です。'
+            f'市区町村では受け付けないものがあります。</p>'
+            f'{_NATIONAL_HTML}')
+
+
 def city_meta(c, med, tk, rank):
     """自治体ページの <title> と meta description を、そのページが実際に持っている
     数字から組み立てる。
@@ -916,7 +978,7 @@ def city_meta(c, med, tk, rank):
     return title, desc
 
 
-def build_city(c, iry_map, taiki_map, rank_map):
+def build_city(c, iry_map, taiki_map, rank_map, progs=()):
     """自治体ページ。全国データ(医療費・保育園)＋手作業で調べた市独自の支援。"""
     key = (c["pref"], c["city"])
     med = iry_map.get(key)
@@ -963,6 +1025,9 @@ def build_city(c, iry_map, taiki_map, rank_map):
         else:
             parts.append('<p style="font-size:.9rem;color:var(--sub)">直近の調査では、希望しても入れなかった児童はいませんでした。ただし年度途中の入園は別なので、市の窓口で空き状況をご確認ください。</p>')
 
+    if progs:
+        parts.append(national_block(c["city"], progs))
+
     # 自動生成のページは programs が空なので、見出しだけ出て中身が無い状態になっていた。
     # 見出しの文言を「調べ方の案内」に変えて、下の公式サイトボタンにつなげる。
     parts.append('<div class="sec-title">💰 {}</div>'.format(
@@ -990,9 +1055,8 @@ def build_city(c, iry_map, taiki_map, rank_map):
     parts.append(f"""
   <div class="note">📌 {html.escape(c['note'])}</div>
   <div class="localnote">
-    <strong>全国共通の制度も忘れずに</strong><br>
-    児童手当・出産育児一時金・育児休業給付金などは、どこに住んでいても同じ内容で受け取れます。
-    市独自の支援とあわせて確認してください。<br>
+    <strong>自分が受け取れるものを確かめる</strong><br>
+    上の表は全国共通の分です。年齢・働き方・世帯の状況で、受け取れるものは変わります。<br>
     <a href="./shindan.html">▶ 受け取れる制度を30秒で確認する</a>
   </div>
   <a class="offbtn" href="{html.escape(c['kosodate_top']) if c.get('kosodate_top') else GSEARCH + urllib.parse.quote(c['pref'] + c['city'] + ' 子育て 給付金 公式')}" target="_blank" rel="noopener">🔗 {html.escape(c['city'])}の子育て支援ページ(公式)</a>
@@ -1701,7 +1765,7 @@ def main():
                 rank_map[(x["pref"], x["city"])] = (i, len(lst))
         for c in cj["cities"]:
             with open(os.path.join(SITE, c["id"] + ".html"), "w", encoding="utf-8") as f:
-                f.write(build_city(c, iry_map, taiki_map, rank_map))
+                f.write(build_city(c, iry_map, taiki_map, rank_map, data["programs"]))
             city_pages.append(c)
         # --- 全国データだけで作れる自治体ページを、規模の大きい順に自動生成する ---
         # 手作業の独自制度は無いが、医療費助成・待機児童の年齢別内訳・県内順位は
@@ -1730,7 +1794,7 @@ def main():
                         "市区町村が独自に実施している給付金は含まれていません。",
             }
             with open(os.path.join(SITE, cid + ".html"), "w", encoding="utf-8") as f:
-                f.write(build_city(auto, iry_map, taiki_map, rank_map))
+                f.write(build_city(auto, iry_map, taiki_map, rank_map, data["programs"]))
             auto_ids.append(cid)
         data["_city_auto"] = auto_ids
         with open(os.path.join(SITE, "chiiki-list.html"), "w", encoding="utf-8") as f:
