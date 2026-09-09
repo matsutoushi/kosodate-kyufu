@@ -1,7 +1,7 @@
 {
 "/": {
-"date": "2026-09-07",
-"hash": "6b08b1d73e0f67aea6b4e7a562b0b906"
+"date": "2026-09-09",
+"hash": "2a851d0f3452e60d4e86fbd91cebc5e9"
 },
 "/chiiki-list.html": {
 "date": "2026-09-07",
@@ -2032,8 +2032,8 @@
 "hash": "6017cd43ad01b5cf623fc49ad0d5c60c"
 },
 "/hikaku-furusato.html": {
-"date": "2026-09-07",
-"hash": "b328182a3e96525396d67ba35ea27362"
+"date": "2026-09-09",
+"hash": "4861232278b0d846998d06cc882fc773"
 },
 "/hikaku-kawanai.html": {
 "date": "2026-09-07",
@@ -2114,6 +2114,10 @@
 "/koko-shushi-kin.html": {
 "date": "2026-09-07",
 "hash": "92152521d62fbc38a74cb020e1835137"
+},
+"/kokunen-ikuji-menjo.html": {
+"date": "2026-09-09",
+"hash": "81b5fbcbcb9c7b8e666142340e03ae11"
 },
 "/kokunen-menjo.html": {
 "date": "2026-09-07",
