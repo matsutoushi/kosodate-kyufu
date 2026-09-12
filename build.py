@@ -1028,6 +1028,18 @@ def build_city(c, iry_map, taiki_map, rank_map, progs=()):
     if progs:
         parts.append(national_block(c["city"], progs))
 
+    # 同じ県の近い規模の自治体。引っ越し先を比べる導線で、ページごとに中身が変わる。
+    if c.get("neighbors"):
+        parts.append(f'<div class="sec-title">🗾 {html.escape(c["pref"])}のほかの市区町村</div>')
+        parts.append('<p style="font-size:.9rem;color:var(--sub);margin:0 0 10px">'
+                     '医療費助成の年齢や待機児童は、となりの市区町村でも違います。'
+                     '引っ越し先を検討しているなら、並べて見てください。</p>')
+        parts.append('<div class="ngrp" style="margin:0">保育所の申込数が近い自治体</div>')
+        for nid, ncity, napply in c["neighbors"]:
+            parts.append(f'<a class="nrow" href="./{nid}.html">'
+                         f'<span class="nname">{html.escape(ncity)}</span>'
+                         f'<span class="nnote">保育所の申込 {napply:,}人</span></a>')
+
     # 自動生成のページは programs が空なので、見出しだけ出て中身が無い状態になっていた。
     # 見出しの文言を「調べ方の案内」に変えて、下の公式サイトボタンにつなげる。
     parts.append('<div class="sec-title">💰 {}</div>'.format(
@@ -1771,18 +1783,31 @@ def main():
         # 手作業の独自制度は無いが、医療費助成・待機児童の年齢別内訳・県内順位は
         # 一次データから出せる。競合が「自治体によります」で済ませている領域なので、
         # ロングテールの検索に対して意味のあるページになる。
-        # 200件で頭打ちにしていたが、公開したページは2日ほどで自動的にインデックスされる
-        # 状態になった(2026-09-02のGSC実測。実在する200件は最下位の青梅市まで登録済み)。
-        # 制約は「Googleが拾うか」ではなく「ページがあるか」に移ったので上限を上げる。
-        # 一気に1,740件にはしない。同じテンプレの自動生成を大量に増やすのは薄いページの
-        # 量産と見なされる恐れがあるため、まず500件にして追加分が表示を取れるか観測する。
-        AUTO_N = 500
+        # 件数ではなく保育所の申込数で線を引く。順位で切ると「何位まで」に根拠が無いが、
+        # 申込数なら「子育て世帯がこれだけいる自治体」という意味を持つ。
+        #
+        # 500件まで広げた結果(2026-09-12のGSC実測):
+        #   ・追加した300件のうち新居浜市が実際にクリックを獲得(CTR 66.7%)
+        #   ・「クロール済み-インデックス未登録」は500ページ中わずか2件。
+        #     Googleが中身を見て弾いているわけではない
+        # ので、さらに広げてよいと判断した。
+        #
+        # ただし全1,712件は作らない。申込300件未満の層は中央値153件、下位212件は
+        # 中央値36件で申込0件の村も含む。そこは「○○村 子育て 給付金」の検索自体が
+        # ほぼ発生せず、作っても表示されないページが積み上がるだけになる。
+        AUTO_MIN_APPLY = 300
         have = {(c["pref"], c["city"]) for c in cj["cities"]}
         pool = [t for t in _tk
                 if (t["pref"], t["city"]) in iry_map and (t["pref"], t["city"]) not in have]
+        pool = [t for t in pool if (t.get("apply") or 0) >= AUTO_MIN_APPLY]
         pool.sort(key=lambda t: -(t.get("apply") or 0))
+        # 同じ都道府県の自治体を隣どうしでつなぐ。引っ越し先を比べたいという
+        # このサイトの使われ方に合っていて、ページごとに中身の違う内部リンクになる。
+        by_pref = {}
+        for t in pool:
+            by_pref.setdefault(t["pref"], []).append(t)
         auto_ids = []
-        for t in pool[:AUTO_N]:
+        for t in pool:
             cid = f'chiiki-{t["pref"]}{t["city"]}'
             auto = {
                 "id": cid, "pref": t["pref"], "city": t["city"],
@@ -1793,6 +1818,12 @@ def main():
                 "note": "このページは全国の公表データから自動で作成しています。"
                         "市区町村が独自に実施している給付金は含まれていません。",
             }
+            # 同県で申込数が近い自治体を前後から拾う(自分は除く)
+            sib = by_pref.get(t["pref"], [])
+            i = sib.index(t)
+            near = [x for x in sib[max(0, i - 3):i + 4] if x is not t][:6]
+            auto["neighbors"] = [(f'chiiki-{x["pref"]}{x["city"]}', x["city"],
+                                  x.get("apply") or 0) for x in near]
             with open(os.path.join(SITE, cid + ".html"), "w", encoding="utf-8") as f:
                 f.write(build_city(auto, iry_map, taiki_map, rank_map, data["programs"]))
             auto_ids.append(cid)
