@@ -454,16 +454,24 @@ def build_program(p, data):
 </a>""")
     # 制度に対応する解説記事があれば、その制度ページから導線を張る
     # (新しい記事を作るたびにリンク元を用意しないと孤立ページになる)
-    ART_FOR = {"ikuji-kyugyo-kyufu": "ikukyu-jiki",
-               "iryohi-kojo": "furusato-onestop",
-               "jido-fuyo-teate": "hitorioya-kojo",
-               "hitorioya-iryohi": "hitorioya-kojo"}
-    _aid = ART_FOR.get(p["id"])
-    if _aid:
-        _a = {x["id"]: x for x in (data.get("_articles") or [])}.get(_aid)
-        if _a:
-            parts.append('<div class="sec-title">あわせて読みたい</div>'
-                         f'<a class="card" href="./{_a["id"]}.html">'
+    ART_FOR = {"ikuji-kyugyo-kyufu": ["ikukyu-itsu", "ikukyu-encho", "jitan-kyufu", "ikukyu-jiki"],
+               "shaho-menjo": ["shaho-getsumatsu"],
+               "iryohi-kojo": ["iryohi-5nen", "furusato-onestop"],
+               "kogaku-ryoyohi": ["kogaku-2nen"],
+               "shussan-ichijikin": ["shussan-2tsu"],
+               "shussan-teate": ["shussan-2tsu"],
+               "jido-teate": ["jido-teate-dochira"],
+               "kokunen-menjo": ["kokunen-ikuji-menjo"],
+               "koyo-encho": ["koyo-encho-4nen"],
+               "hoiku-mushouka": ["ikukyu-encho"],
+               "jido-fuyo-teate": ["hitorioya-kojo"],
+               "hitorioya-iryohi": ["hitorioya-kojo"]}
+    _arts = {x["id"]: x for x in (data.get("_articles") or [])}
+    _list = [_arts[a] for a in ART_FOR.get(p["id"], []) if a in _arts]
+    if _list:
+        parts.append('<div class="sec-title">あわせて読みたい</div>')
+        for _a in _list:
+            parts.append(f'<a class="card" href="./{_a["id"]}.html">'
                          f'<div class="t">{_a.get("emoji","")} {html.escape(_a["title"])}</div>'
                          f'<div class="d">{html.escape(_a["desc"][:80])}… →</div></a>')
     parts.append(related_card(p["id"], data.get("_hikaku") or []))
