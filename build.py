@@ -986,9 +986,17 @@ def city_meta(c, med, tk, rank):
     return title, desc
 
 
+def city_key(pref, city):
+    """市区町村名の表記ゆれを吸収した突き合わせキー。
+    省庁の公表データどうしでも「鶴ヶ島市(待機児童)」と「鶴ケ島市(医療費助成)」のように
+    小書きの「ヶ」と片仮名の「ケ」が混ざる。一致しないと自治体ページが1件まるごと
+    作られないので、キーを作るところで必ずここを通す。"""
+    return (pref, city.replace("ヶ", "ケ").replace("ヵ", "カ"))
+
+
 def build_city(c, iry_map, taiki_map, rank_map, progs=()):
     """自治体ページ。全国データ(医療費・保育園)＋手作業で調べた市独自の支援。"""
-    key = (c["pref"], c["city"])
+    key = city_key(c["pref"], c["city"])
     med = iry_map.get(key)
     tk = taiki_map.get(key)
     rank = rank_map.get(key)
@@ -1103,7 +1111,7 @@ def build_city_index(cities, iry_map, taiki_map, rank_map, group_pref, page_id, 
   <div style="overflow-x:auto">
   <table class="rank"><tr><th>自治体</th><th>医療費(通院)</th><th style="text-align:right">待機児童</th><th style="text-align:right">独自制度</th></tr>""")
     for c in sorted(rows, key=lambda x: x["city"]):
-        k = (c["pref"], c["city"])
+        k = city_key(c["pref"], c["city"])
         med = iry_map.get(k)
         tk = taiki_map.get(k)
         own = sum(1 for p in c["programs"] if "独自" in p.get("tag", ""))
@@ -1773,16 +1781,16 @@ def main():
     if os.path.exists(cities_path) and os.path.exists(IRYOHI):
         cj = json.load(open(cities_path, encoding="utf-8"))
         _iry = json.load(open(IRYOHI, encoding="utf-8"))["municipalities"]
-        iry_map = {(m["pref"], m["city"]): m for m in _iry}
+        iry_map = {city_key(m["pref"], m["city"]): m for m in _iry}
         _tk = json.load(open(TAIKI, encoding="utf-8"))["municipalities"] if os.path.exists(TAIKI) else []
-        taiki_map = {(t["pref"], t["city"]): t for t in _tk}
+        taiki_map = {city_key(t["pref"], t["city"]): t for t in _tk}
         bp = {}
         for m in _iry:
             bp.setdefault(m["pref"], []).append(m)
         rank_map = {}
         for pref, lst in bp.items():
             for i, x in enumerate(sorted(lst, key=lambda x: (-x["rank_out"], x["limit_out"], x["copay_out"])), 1):
-                rank_map[(x["pref"], x["city"])] = (i, len(lst))
+                rank_map[city_key(x["pref"], x["city"])] = (i, len(lst))
         for c in cj["cities"]:
             with open(os.path.join(SITE, c["id"] + ".html"), "w", encoding="utf-8") as f:
                 f.write(build_city(c, iry_map, taiki_map, rank_map, data["programs"]))
@@ -1804,9 +1812,10 @@ def main():
         # 中央値36件で申込0件の村も含む。そこは「○○村 子育て 給付金」の検索自体が
         # ほぼ発生せず、作っても表示されないページが積み上がるだけになる。
         AUTO_MIN_APPLY = 300
-        have = {(c["pref"], c["city"]) for c in cj["cities"]}
+        have = {city_key(c["pref"], c["city"]) for c in cj["cities"]}
         pool = [t for t in _tk
-                if (t["pref"], t["city"]) in iry_map and (t["pref"], t["city"]) not in have]
+                if city_key(t["pref"], t["city"]) in iry_map
+                and city_key(t["pref"], t["city"]) not in have]
         pool = [t for t in pool if (t.get("apply") or 0) >= AUTO_MIN_APPLY]
         pool.sort(key=lambda t: -(t.get("apply") or 0))
         # 同じ都道府県の自治体を隣どうしでつなぐ。引っ越し先を比べたいという
