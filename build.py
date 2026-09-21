@@ -81,7 +81,32 @@ def site_nav(current=""):
 
 # ---- 共通パーツ -------------------------------------------------------------
 
-def head(title, desc, path="/"):
+def crumb_nav(items):
+    """画面に出すパンくず。items は (表示名, href or None)。最後は現在地なのでリンクにしない。"""
+    out = []
+    for i, (name, href) in enumerate(items):
+        if i:
+            out.append('<span style="color:var(--sub);margin:0 6px">›</span>')
+        out.append(f'<a href="{href}">{html.escape(name)}</a>' if href
+                   else f'<span style="color:var(--sub)">{html.escape(name)}</span>')
+    return ('<nav class="crumbs" style="font-size:.84rem;margin:2px 0 10px">'
+            + "".join(out) + "</nav>")
+
+
+def breadcrumb_ld(crumbs):
+    """パンくずの構造化データ。検索結果にサイト内の階層が出る(URLの羅列より読まれる)。
+    crumbs は (名前, サイト内パス) の並び。パスは / から始める。"""
+    items = [{"@type": "ListItem", "position": i, "name": name,
+              "item": BASE_URL + path}
+             for i, (name, path) in enumerate(crumbs, 1)]
+    return ('<script type="application/ld+json">'
+            + json.dumps({"@context": "https://schema.org",
+                          "@type": "BreadcrumbList", "itemListElement": items},
+                         ensure_ascii=False)
+            + "</script>")
+
+
+def head(title, desc, path="/", crumbs=()):
     ga = ""
     if GA4_ID:
         ga = (f'<script async src="https://www.googletagmanager.com/gtag/js?id={GA4_ID}"></script>'
@@ -102,6 +127,7 @@ def head(title, desc, path="/"):
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 {f'<meta name="google-site-verification" content="{GSC_TOKEN}">' if GSC_TOKEN else ''}
+{breadcrumb_ld(crumbs) if crumbs else ''}
 {ga}
 <style>{CSS}</style>
 </head>
@@ -352,7 +378,9 @@ def build_program(p, data):
     e = p.get("_enrich") or {}
     timing = (f'<dt>いつ受け取れる?</dt><dd>{html.escape(e["timing"])}</dd>'
               if e.get("timing") else "")
-    parts = [head(f"{p['title']}｜{SITE_NAME}", p["summary"][:100], f"/{p['id']}.html")]
+    parts = [head(f"{p['title']}｜{SITE_NAME}", p["summary"][:100], f"/{p['id']}.html",
+                  crumbs=[("ホーム", "/"), ("制度をさがす", "/ichiran.html"),
+                          (p["title"], f"/{p['id']}.html")])]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
 {site_nav()}
@@ -1003,12 +1031,17 @@ def build_city(c, iry_map, taiki_map, rank_map, progs=()):
     name = f'{c["pref"]}{c["city"]}'
 
     _title, _desc = city_meta(c, med, tk, rank)
-    parts = [head(_title, _desc, f"/{c['id']}.html")]
+    _pid = pref_id(c["pref"])
+    parts = [head(_title, _desc, f"/{urllib.parse.quote(c['id'])}.html",
+                  crumbs=[("ホーム", "/"), ("地域で調べる", "/chiiki.html"),
+                          (c["pref"], f"/{urllib.parse.quote(_pid)}.html"),
+                          (c["city"], f"/{urllib.parse.quote(c['id'])}.html")])]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
 {site_nav()}
 <div class="wrap body">
-  <a class="back" href="./chiiki.html">← 地域で調べる</a>
+  {crumb_nav([("ホーム", "./index.html"), ("地域で調べる", "./chiiki.html"),
+              (c["pref"], f"./{urllib.parse.quote(_pid)}.html"), (c["city"], None)])}
   <h1 style="font-size:1.4rem;margin:.2em 0">{html.escape(name)}の子育て支援</h1>
   <p>{html.escape(c['lead'])}</p>
   <p style="font-size:.92rem;color:var(--sub)">{html.escape(c["city"])}の子育て支援は、
@@ -1052,9 +1085,12 @@ def build_city(c, iry_map, taiki_map, rank_map, progs=()):
                      '引っ越し先を検討しているなら、並べて見てください。</p>')
         parts.append('<div class="ngrp" style="margin:0">保育所の申込数が近い自治体</div>')
         for nid, ncity, napply in c["neighbors"]:
-            parts.append(f'<a class="nrow" href="./{nid}.html">'
+            parts.append(f'<a class="nrow" href="./{urllib.parse.quote(nid)}.html">'
                          f'<span class="nname">{html.escape(ncity)}</span>'
                          f'<span class="nnote">保育所の申込 {napply:,}人</span></a>')
+        parts.append(f'<a class="nrow" href="./{urllib.parse.quote(_pid)}.html">'
+                     f'<span class="nname">{html.escape(c["pref"])}全体を見る</span>'
+                     f'<span class="nnote">県内の医療費助成の比較と、出産でもらえる額</span></a>')
 
     # 自動生成のページは programs が空なので、見出しだけ出て中身が無い状態になっていた。
     # 見出しの文言を「調べ方の案内」に変えて、下の公式サイトボタンにつなげる。
@@ -1088,6 +1124,150 @@ def build_city(c, iry_map, taiki_map, rank_map, progs=()):
     <a href="./shindan.html">▶ 受け取れる制度を30秒で確認する</a>
   </div>
   <a class="offbtn" href="{html.escape(c['kosodate_top']) if c.get('kosodate_top') else GSEARCH + urllib.parse.quote(c['pref'] + c['city'] + ' 子育て 給付金 公式')}" target="_blank" rel="noopener">🔗 {html.escape(c['city'])}の子育て支援ページ(公式)</a>
+""")
+    parts.append(related_card(None, [1]))
+    parts.append("</div>")
+    parts.append(footer())
+    return "".join(parts)
+
+
+def pref_id(pref):
+    return "pref-" + pref
+
+
+def build_pref(pref, meds, tks, id_of, progs=()):
+    """都道府県ページ。
+
+    GSCの実測(2026-09-21・直近28日)で「新潟 出産 助成金 いくら」「宮崎 出産 助成金 いくら」
+    のような<都道府県>+出産+いくら が19県で210表示・クリック0だった。県単位のページが
+    1つも無く、市区町村ページが代わりに出て内容がずれている。
+    答えるべきことは2つで、どちらもいま持っているデータで書ける。
+      ①出産でもらえる額は全国共通(一時金50万円ほか) → national_block
+      ②県内で変わるのは医療費助成と保育園 → 県内の集計と順位
+    市区町村ページ1,013件へのハブにもなる。
+    """
+    n = len(meds)
+    order = sorted(meds, key=lambda m: (-m["rank_out"], m["limit_out"], m["copay_out"]))
+    free = [m for m in meds if not m["limit_out"] and not m["copay_out"]]
+    ages = {}
+    for m in meds:
+        ages[m["age_out"]] = ages.get(m["age_out"], 0) + 1
+    top_age, top_age_n = max(ages.items(), key=lambda kv: kv[1])
+    apply_sum = sum(t.get("apply") or 0 for t in tks)
+    wait_sum = sum(t.get("wait") or 0 for t in tks)
+    waits = sorted([t for t in tks if (t.get("wait") or 0) > 0],
+                   key=lambda t: -(t.get("wait") or 0))
+
+    # タイトルは検索語(出産・いくら)を残す。32文字を超えたら「はいくら」から削る。
+    for cand in (f"{pref}の出産でもらえるお金はいくら｜{n}市区町村を比較",
+                 f"{pref}の出産でもらえるお金｜{n}市区町村を比較",
+                 f"{pref}の出産・子育ての給付金"):
+        title = cand
+        if len(title) <= 32:
+            break
+    desc = (f"{pref}で出産してもらえるお金のうち、出産育児一時金50万円などの国の制度は"
+            f"全国同じ額です。{pref}で変わるのは子ども医療費助成で、{n}市区町村のうち"
+            f"{top_age}までが{top_age_n}件、所得制限も自己負担もないのが{len(free)}件。"
+            f"保育所の申込{apply_sum:,}人・待機児童{wait_sum}人。市区町村ごとに比べられます。")
+
+    parts = [head(title, desc, f"/{urllib.parse.quote(pref_id(pref))}.html",
+                  crumbs=[("ホーム", "/"), ("地域で調べる", "/chiiki.html"),
+                          (pref, f"/{urllib.parse.quote(pref_id(pref))}.html")])]
+    parts.append(f"""
+<header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
+{site_nav()}
+<div class="wrap body">
+  {crumb_nav([("ホーム", "./index.html"), ("地域で調べる", "./chiiki.html"), (pref, None)])}
+  <h1 style="font-size:1.4rem;margin:.2em 0">{html.escape(pref)}で出産・子育てでもらえるお金</h1>
+  <p>{html.escape(pref)}で出産したときに受け取れるお金は、大きく2つに分かれます。
+  <strong>全国どこでも同じ額のもの</strong>と、<strong>市区町村ごとに違うもの</strong>です。
+  金額がいくらになるかは、ほとんどが前者で決まります。</p>""")
+
+    if progs:
+        parts.append(national_block(pref, progs))
+
+    parts.append(f"""
+  <div class="sec-title">🏥 {html.escape(pref)}で変わるのは子ども医療費助成</div>
+  <p style="font-size:.92rem;color:var(--sub)">子どもの医療費をどこまで助成するかは、
+  国ではなく市区町村が決めています。{html.escape(pref)}の{n}市区町村を集計しました。</p>
+  <div class="amount">通院は{html.escape(top_age)}までが{top_age_n}／{n}市区町村</div>
+  <div style="margin:8px 0">
+    <span class="pill p-good">所得制限も自己負担もなし {len(free)}件</span>
+    <span class="pill p-warn">どちらかあり {n - len(free)}件</span>
+  </div>""")
+
+    # 「手厚い順」に1件ずつ並べると、県内が全部同条件のとき(香川17/17など)に
+    # まったく同じ行が並んで意味を持たない。条件ごとにまとめて、何件がどの条件かを見せる。
+    groups = {}
+    for m in order:
+        groups.setdefault((m["age_out"], m["limit_out"], m["copay_out"]), []).append(m)
+    if len(groups) == 1:
+        age, lim, cop = next(iter(groups))
+        parts.append(f'<p>{html.escape(pref)}は、{n}市区町村すべてが同じ条件です。'
+                     f'通院{html.escape(age)}まで・'
+                     f'{"所得制限あり" if lim else "所得制限なし"}・'
+                     f'{"自己負担あり" if cop else "自己負担なし"}。'
+                     f'県内で引っ越しても、子ども医療費助成の条件は変わりません。</p>')
+    else:
+        parts.append('<div class="ngrp">条件ごとの内訳（手厚い順）</div>')
+        for (age, lim, cop), g in groups.items():
+            cond = (f'通院{age}まで／{"所得制限あり" if lim else "所得制限なし"}・'
+                    f'{"自己負担あり" if cop else "自己負担なし"}')
+            names = []
+            for m in sorted(g, key=lambda m: m["city"])[:12]:
+                cid = id_of.get(city_key(m["pref"], m["city"]))
+                names.append(f'<a href="./{urllib.parse.quote(cid)}.html">{html.escape(m["city"])}</a>'
+                             if cid else html.escape(m["city"]))
+            if len(g) > 12:
+                names.append(f'ほか{len(g) - 12}件')
+            parts.append(f'<div class="nrow" style="display:block">'
+                         f'<div class="nname">{html.escape(cond)}（{len(g)}市区町村）</div>'
+                         f'<div class="nnote" style="line-height:2">{"　".join(names)}</div></div>')
+    parts.append('<p style="font-size:.86rem;color:var(--sub)">'
+                 '助成の対象や申請方法は市区町村によって細かく異なります。'
+                 'お住まいの市区町村の公式ページでもご確認ください。</p>')
+
+    if tks:
+        parts.append(f"""
+  <div class="sec-title">🍼 {html.escape(pref)}の保育園</div>
+  <div class="amount">待機児童 {wait_sum}人（申込 {apply_sum:,}人）</div>""")
+        if waits:
+            parts.append(f'<div class="ngrp">待機児童が多い市区町村</div>')
+            for t in waits[:5]:
+                cid = id_of.get(city_key(t["pref"], t["city"]))
+                note = f'待機児童 {t["wait"]}人／申込 {(t.get("apply") or 0):,}人'
+                if cid:
+                    parts.append(f'<a class="nrow" href="./{urllib.parse.quote(cid)}.html">'
+                                 f'<span class="nname">{html.escape(t["city"])}</span>'
+                                 f'<span class="nnote">{html.escape(note)}</span></a>')
+                else:
+                    parts.append(f'<div class="nrow"><span class="nname">{html.escape(t["city"])}</span>'
+                                 f'<span class="nnote">{html.escape(note)}</span></div>')
+        else:
+            parts.append('<p style="font-size:.9rem;color:var(--sub)">'
+                         '直近の調査では、県内で待機児童は確認されていません。'
+                         '年度途中の入園は別なので、市区町村の窓口でご確認ください。</p>')
+
+    linked = [(m["city"], id_of.get(city_key(m["pref"], m["city"]))) for m in
+              sorted(meds, key=lambda m: m["city"])]
+    linked = [(c, i) for c, i in linked if i]
+    if linked:
+        parts.append(f'<div class="sec-title">🗾 {html.escape(pref)}の市区町村から調べる</div>'
+                     '<p style="line-height:2.2">')
+        for city, cid in linked:
+            parts.append(f'<a href="./{urllib.parse.quote(cid)}.html" '
+                         f'style="display:inline-block;margin:0 8px 4px 0">{html.escape(city)}</a>')
+        parts.append("</p>")
+
+    parts.append(f"""
+  <div class="note">📌 このページは、こども家庭庁が公表している全国データ({pref}の{n}市区町村)を
+  集計して作成しています。市区町村が独自に出している出産祝い金などは含まれていません。</div>
+  <div class="localnote">
+    <strong>自分が受け取れるものを確かめる</strong><br>
+    金額は年齢・働き方・世帯の状況で変わります。<br>
+    <a href="./shindan.html">▶ 受け取れる制度を30秒で確認する</a>
+  </div>
+  <a class="offbtn" href="{GSEARCH + urllib.parse.quote(pref + ' 子育て 支援 公式')}" target="_blank" rel="noopener">🔗 {html.escape(pref)}の子育て支援ページ(公式)</a>
 """)
     parts.append(related_card(None, [1]))
     parts.append("</div>")
@@ -1195,17 +1375,16 @@ def build_policy():
     return "".join(parts)
 
 
-def build_city_auto_index(ids):
+def build_city_auto_index(rows):
     """自動生成した自治体ページの一覧。都道府県ごとにまとめる。
-    孤立ページにするとGoogleにも人にも辿り着けないので、必ずここから繋ぐ。"""
+    孤立ページにするとGoogleにも人にも辿り着けないので、必ずここから繋ぐ。
+
+    rows は (都道府県, 市区町村, ページid)。以前はidの文字列から県名を切り出していたが、
+    「栃木県宇都宮市」を先頭の「都」で切って「栃木県宇都」と誤認していた(京都市・宮崎県都城市も同様)。
+    県名はデータ側が知っているので、推測せずそのまま受け取る。"""
     byp = {}
-    for cid in ids:
-        rest = cid[len("chiiki-"):]
-        for suf in ("都", "道", "府", "県"):
-            i = rest.find(suf)
-            if i > 0:
-                byp.setdefault(rest[:i + 1], []).append((cid, rest[i + 1:]))
-                break
+    for pref, city, cid in rows:
+        byp.setdefault(pref, []).append((cid, city))
     parts = [head(f"市区町村から探す｜{SITE_NAME}",
                   "子ども医療費助成が何歳までか、保育園の待機児童が何人かを、市区町村ごとにまとめています。",
                   "/chiiki-list.html")]
@@ -1218,7 +1397,9 @@ def build_city_auto_index(ids):
   <p>子ども医療費助成が何歳までか、保育園の待機児童が何人か、県内で何番目に手厚いかを
   市区町村ごとにまとめています。まずは規模の大きい市区町村から掲載しています。</p>""")
     for pref in sorted(byp):
-        parts.append(f'<div class="sec-title">{html.escape(pref)}</div><p style="line-height:2.2">')
+        parts.append(f'<div class="sec-title">'
+                     f'<a href="./{urllib.parse.quote(pref_id(pref))}.html">{html.escape(pref)}</a>'
+                     f'</div><p style="line-height:2.2">')
         for cid, city in sorted(byp[pref], key=lambda x: x[1]):
             parts.append(f'<a href="./{urllib.parse.quote(cid)}.html" '
                          f'style="display:inline-block;margin:0 8px 4px 0">{html.escape(city)}</a>')
@@ -1592,7 +1773,8 @@ def build_kabe():
 def build_article(a, articles=()):
     """解説記事ページ。制度でも比較でもない読み物を汎用に描く。
     data/articles.json に足すだけでページが増える(将来の税金まわりもここに置く)。"""
-    parts = [head(f"{a['title']}｜{SITE_NAME}", a["desc"], f"/{a['id']}.html")]
+    parts = [head(f"{a['title']}｜{SITE_NAME}", a["desc"], f"/{a['id']}.html",
+                  crumbs=[("ホーム", "/"), (a["title"], f"/{a['id']}.html")])]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
 {site_nav()}
@@ -1823,7 +2005,7 @@ def main():
         by_pref = {}
         for t in pool:
             by_pref.setdefault(t["pref"], []).append(t)
-        auto_ids = []
+        auto_ids, auto_rows = [], []
         for t in pool:
             cid = f'chiiki-{t["pref"]}{t["city"]}'
             auto = {
@@ -1844,10 +2026,32 @@ def main():
             with open(os.path.join(SITE, cid + ".html"), "w", encoding="utf-8") as f:
                 f.write(build_city(auto, iry_map, taiki_map, rank_map, data["programs"]))
             auto_ids.append(cid)
+            auto_rows.append((t["pref"], t["city"], cid))
         data["_city_auto"] = auto_ids
         with open(os.path.join(SITE, "chiiki-list.html"), "w", encoding="utf-8") as f:
-            f.write(build_city_auto_index(auto_ids))
+            f.write(build_city_auto_index(auto_rows))
         print(f"  自動生成の自治体ページ: {len(auto_ids)}件")
+
+        # --- 都道府県ページ。市区町村ページのハブであり、
+        # 「<県名> 出産 助成金 いくら」の受け皿でもある(GSC 2026-09-21) ---
+        id_of = {city_key(c["pref"], c["city"]): c["id"] for c in cj["cities"]}
+        for t in pool:
+            id_of.setdefault(city_key(t["pref"], t["city"]),
+                             f'chiiki-{t["pref"]}{t["city"]}')
+        by_pref_med, by_pref_tk = {}, {}
+        for m in _iry:
+            by_pref_med.setdefault(m["pref"], []).append(m)
+        for t in _tk:
+            by_pref_tk.setdefault(t["pref"], []).append(t)
+        pref_ids = []
+        for pref in sorted(by_pref_med):
+            pid = pref_id(pref)
+            with open(os.path.join(SITE, pid + ".html"), "w", encoding="utf-8") as f:
+                f.write(build_pref(pref, by_pref_med[pref], by_pref_tk.get(pref, []),
+                                   id_of, data["programs"]))
+            pref_ids.append(pid)
+        data["_pref"] = pref_ids
+        print(f"  都道府県ページ: {len(pref_ids)}件")
 
         idx = build_city_index(city_pages, iry_map, taiki_map, rank_map, "東京都", "tokyo23",
                                "東京23区の子育て支援をくらべる",
@@ -1901,6 +2105,7 @@ def main():
     pages += [f"/{a['id']}.html" for a in (data.get("_articles") or [])]
     pages += ["/kabe.html"]
     pages += [f"/{x}.html" for x in (data.get("_city_auto") or [])]
+    pages += [f"/{x}.html" for x in (data.get("_pref") or [])]
     pages += ["/chiiki-list.html"]
     if os.path.exists(hikaku_path):
         pages += [f"/{pg['id']}.html" for pg in json.load(open(hikaku_path, encoding="utf-8"))["pages"]]
