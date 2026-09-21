@@ -957,7 +957,7 @@ def national_block(city, progs):
                     f'<span class="nname">{html.escape(titles[pid])}</span>'
                     f'<span class="nnote">{html.escape(note)}</span></a>')
         _NATIONAL_HTML = "".join(rows)
-    return (f'<div class="sec-title">📋 {html.escape(city)}に住んでいても、'
+    return (f'<div class="sec-title" id="shinsei">📋 {html.escape(city)}に住んでいても、'
             f'国の制度は全国同じです</div>'
             f'<p style="font-size:.9rem;color:var(--sub);margin:0 0 10px">'
             f'金額はどこに住んでいても変わりません。変わるのは'
@@ -995,7 +995,20 @@ def city_meta(c, med, tk, rank):
     else:
         title = f"{name}の子育て支援・助成金・補助金｜{SITE_NAME}"
 
+    # 東京の区は医療費が全区18歳まで無料で、末尾に書いても差にならない。
+    # 実際の検索は「杉並区 子供 手当 10万円」「中野区 出産 10万円」のように金額で来ている
+    # (GSC 2026-09-21)。手で調べた給付の中に該当があるページだけ、金額を題に出す。
+    pnames = " ".join(p["name"] for p in c.get("programs", []))
+    if c["pref"] == "東京都" and "応援ギフト" in pnames and "018サポート" in pnames:
+        for cand in (f'{c["city"]}の子育て給付金｜出産10万円分ギフト・018で月5千円',
+                     f'{c["city"]}の子育て給付金｜出産10万円分・月5千円'):
+            title = cand
+            if len(title) <= 32:
+                break
+
     bits = []
+    if c["pref"] == "東京都" and "応援ギフト" in pnames and "018サポート" in pnames:
+        bits.append("出産・子育て応援ギフト10万円分、018サポート月5,000円。")
     if med:
         span = (f'通院・入院とも{med["age_out"]}まで'
                 if med["age_out"] == med["age_in"]
@@ -1047,10 +1060,22 @@ def build_city(c, iry_map, taiki_map, rank_map, progs=()):
   <p style="font-size:.92rem;color:var(--sub)">{html.escape(c["city"])}の子育て支援は、
   「助成金」「補助金」「支援金」「給付金」と呼び方がわかれています。
   名前がちがうだけで同じ制度のこともあるので、このページではまとめて確認できるようにしました。</p>""")
+    # 「佐世保 育児休業給付金 申請」のように、自治体名＋国の制度＋申請で来る検索が多い
+    # (GSC 2026-09-21)。答え(申請先の表)がページ下にあるので、冒頭から飛べるようにする。
+    toc = []
+    if med:
+        toc.append('<a href="#iryo">子ども医療費</a>')
+    if tk:
+        toc.append('<a href="#hoiku">保育園の待機児童</a>')
+    if progs:
+        toc.append('<a href="#shinsei">児童手当・育休給付金・出産育児一時金の申請先</a>')
+    if toc:
+        parts.append('<div class="note" style="font-size:.88rem">このページでわかること：'
+                     + "／".join(toc) + "</div>")
 
     if med:
         parts.append(f"""
-  <div class="sec-title">🏥 こども医療費助成</div>
+  <div class="sec-title" id="iryo">🏥 こども医療費助成</div>
   <div class="amount">通院 {html.escape(med['age_out'])}まで ／ 入院 {html.escape(med['age_in'])}まで</div>
   <div style="margin:8px 0">
     {'<span class="pill p-warn">所得制限あり</span>' if med['limit_out'] else '<span class="pill p-good">所得制限なし</span>'}
@@ -1065,7 +1090,7 @@ def build_city(c, iry_map, taiki_map, rank_map, progs=()):
         w = tk["wait"]
         wa = tk["wait_age"]
         parts.append(f"""
-  <div class="sec-title">🍼 保育園</div>
+  <div class="sec-title" id="hoiku">🍼 保育園</div>
   <div class="amount">待機児童 {('0人' if w == 0 else str(w) + '人')}（申込 {tk['apply']:,}人）</div>""")
         if w > 0:
             det = " / ".join(f"{lb} {wa.get(k,0)}人" for k, lb in
