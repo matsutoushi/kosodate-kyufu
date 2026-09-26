@@ -1470,8 +1470,12 @@ def build_kabe():
       <label style="display:block;margin-bottom:4px"><input type="checkbox" id="kBig" checked> 勤務先の従業員が50人超</label>
       <label style="display:block;margin-bottom:4px"><input type="checkbox" id="kHours" checked> 週20時間以上働く</label>
       <label style="display:block"><input type="checkbox" id="kStudent"> 学生である</label>
+      <label style="display:block;margin:10px 0 4px;font-weight:700">お住まいの都道府県
+        <select id="kPref" style="font-size:1rem;padding:4px 6px;border-radius:8px;border:1px solid #E2D8CE"><option value="北海道">北海道 10.28%</option><option value="青森県">青森県 9.85%</option><option value="岩手県">岩手県 9.51%</option><option value="宮城県">宮城県 10.1%</option><option value="秋田県">秋田県 10.01%</option><option value="山形県">山形県 9.75%</option><option value="福島県">福島県 9.5%</option><option value="茨城県">茨城県 9.52%</option><option value="栃木県">栃木県 9.82%</option><option value="群馬県">群馬県 9.68%</option><option value="埼玉県">埼玉県 9.67%</option><option value="千葉県">千葉県 9.73%</option><option value="東京都" selected>東京都 9.85%</option><option value="神奈川県">神奈川県 9.92%</option><option value="新潟県">新潟県 9.21%</option><option value="富山県">富山県 9.59%</option><option value="石川県">石川県 9.7%</option><option value="福井県">福井県 9.71%</option><option value="山梨県">山梨県 9.55%</option><option value="長野県">長野県 9.63%</option><option value="岐阜県">岐阜県 9.8%</option><option value="静岡県">静岡県 9.61%</option><option value="愛知県">愛知県 9.93%</option><option value="三重県">三重県 9.77%</option><option value="滋賀県">滋賀県 9.88%</option><option value="京都府">京都府 9.89%</option><option value="大阪府">大阪府 10.13%</option><option value="兵庫県">兵庫県 10.12%</option><option value="奈良県">奈良県 9.91%</option><option value="和歌山県">和歌山県 10.06%</option><option value="鳥取県">鳥取県 9.86%</option><option value="島根県">島根県 9.94%</option><option value="岡山県">岡山県 10.05%</option><option value="広島県">広島県 9.78%</option><option value="山口県">山口県 10.15%</option><option value="徳島県">徳島県 10.24%</option><option value="香川県">香川県 10.02%</option><option value="愛媛県">愛媛県 9.98%</option><option value="高知県">高知県 10.05%</option><option value="福岡県">福岡県 10.11%</option><option value="佐賀県">佐賀県 10.55%</option><option value="長崎県">長崎県 10.06%</option><option value="熊本県">熊本県 10.08%</option><option value="大分県">大分県 10.08%</option><option value="宮崎県">宮崎県 9.77%</option><option value="鹿児島県">鹿児島県 10.13%</option><option value="沖縄県">沖縄県 9.44%</option></select></label>
+      <div style="color:#6B6B76;font-size:.8rem;margin-bottom:6px">健康保険料率は都道府県で違います(協会けんぽ・令和8年度)。</div>
+      <label style="display:block;margin-bottom:4px"><input type="checkbox" id="kAge40"> 40歳以上（介護保険料がかかる）</label>
       <div style="color:#6B6B76;font-size:.8rem;margin-top:8px;line-height:1.6">
-        この3つは<strong>106万円の壁が効くかどうか</strong>を決める条件です。
+        上の3つは<strong>106万円の壁が効くかどうか</strong>を決める条件です。
         「従業員50人超」と「週20時間以上」の<strong>両方</strong>にあてはまり、かつ学生でない場合だけ、
         年収106万円で社会保険に加入します。どちらか一方でも外れると、壁は130万円まで動きます。
       </div>
@@ -1518,9 +1522,11 @@ def build_kabe():
 
   <div class="sec-title">この試算の前提</div>
   <ul class="mis">
-    <li>手取りの計算は<strong>目安</strong>です。社会保険料は収入の約15%、所得税は5%、住民税は10%として概算しています</li>
-    <li>実際の保険料は加入する健康保険や住んでいる地域で変わります</li>
-    <li>住民税は年収100万円前後から自治体ごとの基準でかかり始めます(この試算には含めていません)</li>
+    <li>健康保険料は<strong>協会けんぽの令和8年度の都道府県別料率</strong>で計算しています(子ども・子育て支援金0.23%を含み、労使折半の本人分)。勤務先が健康保険組合の場合は料率が変わります</li>
+    <li>厚生年金は18.300%、雇用保険は令和8年度の労働者負担5/1000(一般の事業)、介護保険は40〜64歳の方に1.62%で計算しています</li>
+    <li>保険料は本来<strong>標準報酬月額の等級</strong>にあてはめて決まります。ここでは月収をそのまま使っているので、実際とは数百円程度ずれます</li>
+    <li>住民税は所得割10%＋均等割5,000円＋森林環境税1,000円で計算しています。<strong>非課税になる基準は自治体(級地)で違い</strong>、給与収入110万円前後が目安です。名古屋市のように税率が違う市や、均等割に上乗せのある県もあります</li>
+    <li>所得税は超過累進税率＋復興特別所得税2.1%で、社会保険料控除と基礎控除を反映しています</li>
     <li>配偶者特別控除は配偶者の収入に応じて段階的に減りますが、ここでは簡略化しています</li>
     <li>勤務先の家族手当・扶養手当が年収で決まる場合は、別途その影響があります</li>
   </ul>
@@ -1532,6 +1538,9 @@ def build_kabe():
   <ul class="tips">
     <li><a href="https://www.nta.go.jp/users/gensen/2025kiso/index.htm" target="_blank" rel="noopener">国税庁 令和7年度税制改正による所得税の基礎控除の見直し等について</a></li>
     <li><a href="https://www.mhlw.go.jp/stf/taiou_001_00002.html" target="_blank" rel="noopener">厚生労働省「年収の壁」への対応</a></li>
+    <li><a href="https://www.kyoukaikenpo.or.jp/about/business/insurance_rate/rate_prefectures/r08/index.html" target="_blank" rel="noopener">全国健康保険協会 令和8年度の都道府県毎の保険料率</a></li>
+    <li><a href="https://www.nenkin.go.jp/service/kounen/hokenryo/hoken/20120827.html" target="_blank" rel="noopener">日本年金機構 厚生年金保険の保険料</a></li>
+    <li><a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/hoken/hokenryouritsu/index.html" target="_blank" rel="noopener">厚生労働省 雇用保険料率について</a></li>
   </ul>
 
   <div class="sec-title">ここから先は、計算では出せません</div>
@@ -1647,21 +1656,66 @@ def build_kabe():
     if(t<=40000000) return t*0.40 - 2796000;
     return t*0.45 - 4796000;
   }}
+  // ---- 保険料率(一次情報) --------------------------------------------------
+  // 健康保険: 協会けんぽ 令和8年度の都道府県別料率 + 子ども・子育て支援金0.23%。労使折半。
+  // 介護保険: 全国一律1.62%(40〜64歳)。厚生年金: 18.300%。雇用保険: 労働者負担5/1000。
+  var PREF_RATE = {{"北海道":10.28,"青森県":9.85,"岩手県":9.51,"宮城県":10.1,"秋田県":10.01,"山形県":9.75,"福島県":9.5,"茨城県":9.52,"栃木県":9.82,"群馬県":9.68,"埼玉県":9.67,"千葉県":9.73,"東京都":9.85,"神奈川県":9.92,"新潟県":9.21,"富山県":9.59,"石川県":9.7,"福井県":9.71,"山梨県":9.55,"長野県":9.63,"岐阜県":9.8,"静岡県":9.61,"愛知県":9.93,"三重県":9.77,"滋賀県":9.88,"京都府":9.89,"大阪府":10.13,"兵庫県":10.12,"奈良県":9.91,"和歌山県":10.06,"鳥取県":9.86,"島根県":9.94,"岡山県":10.05,"広島県":9.78,"山口県":10.15,"徳島県":10.24,"香川県":10.02,"愛媛県":9.98,"高知県":10.05,"福岡県":10.11,"佐賀県":10.55,"長崎県":10.06,"熊本県":10.08,"大分県":10.08,"宮崎県":9.77,"鹿児島県":10.13,"沖縄県":9.44}};
+  var KODOMO=0.23, KAIGO=1.62, KOSEI=18.30, KOYO=0.5;
+  var PR=document.getElementById('kPref'), A40=document.getElementById('kAge40');
+  function healthRate(){{ return PREF_RATE[PR.value] || 9.85; }}
+  // 標準報酬月額の上限・下限だけ反映する(等級の刻みまでは追わない)
+  function clampBase(m, lo, hi){{ return Math.min(hi, Math.max(lo, m)); }}
+  // 本人が負担する社会保険料(年額)の内訳
+  function insBreak(annual, joined, emp20, is40){{
+    var m = annual/12, o = {{health:0, kaigo:0, pension:0, koyo:0, total:0}};
+    if(joined){{
+      var hb = clampBase(m, 58000, 1390000), pb = clampBase(m, 88000, 650000);
+      o.health  = hb*((healthRate()+KODOMO)/100)/2*12;
+      o.kaigo   = is40 ? hb*(KAIGO/100)/2*12 : 0;
+      o.pension = pb*(KOSEI/100)/2*12;
+    }}
+    // 雇用保険は週20時間以上で加入する。106万・130万の壁とは別の条件。
+    if(emp20 && annual>0) o.koyo = annual*(KOYO/100);
+    o.total = o.health+o.kaigo+o.pension+o.koyo;
+    return o;
+  }}
+  // 給与所得控除(令和7年分以後)
+  function kyuyoDed(inc){{
+    if(inc<=1900000) return Math.min(inc, 650000);
+    if(inc<=3600000) return inc*0.3+80000;
+    if(inc<=6600000) return inc*0.2+440000;
+    if(inc<=8500000) return inc*0.1+1100000;
+    return 1950000;
+  }}
+  // 所得税(復興特別所得税2.1%込み)と住民税。社会保険料は全額控除できる。
+  function taxes(inc, socialIns, spouseDed){{
+    var a = Math.max(0, inc - kyuyoDed(inc));            // 給与所得
+    var ti = Math.max(0, a - socialIns - basicDed(a) - (spouseDed||0));
+    var it = incomeTax(ti)*1.021;
+    // 住民税: 基礎控除43万円。均等割5,000円＋森林環境税1,000円。
+    // 所得が45万円以下なら非課税(1級地。給与収入なら110万円が目安)。
+    // 住民税の配偶者控除は33万円が上限(所得税の38万円とは別)
+    var tj = Math.max(0, a - socialIns - 430000 - Math.min(spouseDed||0, 330000));
+    var res = a<=450000 ? 0 : tj*0.10 + 6000;
+    return {{income: it, resident: res}};
+  }}
   // 働いている側(相手)の手取り。配偶者(特別)控除の有無で変わる
   function partnerNet(h, deduction){{
-    var ins = h*0.15;                       // 社会保険料 約15%
-    var a = partnerIncome(h);               // 給与所得
-    var taxable = Math.max(0, a - ins - basicDed(a) - deduction);
-    return h - ins - incomeTax(taxable) - taxable*0.10;   // 住民税10%
+    var ins = insBreak(h, true, true, false).total;
+    var t = taxes(h, ins, deduction);
+    return h - ins - t.income - t.resident;
   }}
-  // 世帯の手取り合計(目安)。noTax=true なら働く側の所得税がなかった場合の比較線
+  // 働く側の内訳(画面にそのまま出す)
+  function selfBreak(inc, noTax){{
+    var ins = insBreak(inc, insured(inc), H.checked, A40.checked);
+    var t = taxes(inc, ins.total, 0);
+    if(noTax){{ t = {{income:0, resident:0}}; }}
+    return {{ins:ins, tax:t, net: inc - ins.total - t.income - t.resident}};
+  }}
+  // 世帯の手取り合計(目安)。noTax=true なら働く側の税がなかった場合の比較線
   function net(inc, noTax){{
     var h = +HS.value;
-    var ins = insured(inc) ? inc*0.15 : 0;              // 社会保険料 約15%
-    var taxable = Math.max(0, inc - 650000 - 950000);   // 給与所得控除65万 + 基礎控除95万
-    var itax = noTax ? 0 : taxable*0.05;                // 働く側の所得税(概算5%)
-    // 世帯合計 = 相手の手取り(控除の影響込み) + 働く側の手取り
-    return partnerNet(h, spouseAllowance(inc,h).amt) + (inc - ins - itax);
+    return partnerNet(h, spouseAllowance(inc,h).amt) + selfBreak(inc, noTax).net;
   }}
 
   function draw(cur){{
@@ -1743,6 +1797,9 @@ def build_kabe():
     var inc=+S.value; L.textContent=yen(inc);
     var hInc=+HS.value; HL.textContent=yen(hInc);
     var ins=insured(inc), rows=[];
+    // 所得税の有無は「160万円を超えたか」ではなく、実際に計算した税額で判定する。
+    // 社会保険に入ると保険料が全額控除になるので、160万円を超えても0円のことがある。
+    var sb0 = selfBreak(inc), hasTax = sb0.tax.income > 0;
     // スライダーのすぐ下に要点だけ出す(グラフまでスクロールしなくても分かるように)
     var ok=function(b,s){{return '<span style="color:'+(b?'#3F6F69':'#D14757')+'">'+s+'</span>';}};
     // 控除の判定は「働く側の年収」と「相手の所得」の両方で決まる。
@@ -1766,9 +1823,11 @@ def build_kabe():
       '世帯の手取り合計 <span style="color:#F4643B;font-size:1.25rem">'+yen(net(inc))+'</span> 円<br>'
       + ok(sp[1], (sp[1]?'✓ ':'✗ ')+sp[0])
       + '<br>' + ok(!ins, ins?'✗ 社会保険に加入':'✓ 社会保険は扶養のまま')
-      + '　' + ok(inc<=1600000, inc<=1600000?'✓ 所得税なし':'✗ 所得税あり');
+      + '　' + ok(!hasTax, hasTax?'✗ 所得税あり':'✓ 所得税なし');
     rows.push(['配偶者の控除', sp[0], sp[1], sp[2]]);
-    rows.push(['本人の所得税', inc<=1600000 ? 'かかりません' : 'かかります', inc<=1600000]);
+    rows.push(['本人の所得税', hasTax ? 'かかります（年 '+yen(sb0.tax.income)+' 円）' : 'かかりません',
+               !hasTax, hasTax ? '' :
+               (ins ? '社会保険料が全額控除になるため、160万円を超えていてもかからない場合があります。' : '')]);
     rows.push(['社会保険', ins ? '自分で加入します' : '扶養のままです', !ins]);
     var h='<div class="sec-title">この年収だとどうなるか</div>';
     rows.forEach(function(r){{
@@ -1776,6 +1835,31 @@ def build_kabe():
          '</div><div class="d" style="color:'+(r[2]?'#3F6F69':'#D14757')+';font-weight:700">'+r[1]+'</div>'+
          (r[3]?'<div class="d" style="margin-top:4px">'+r[3]+'</div>':'')+'</div>';
     }});
+    // 「いくら引かれるのか」を額で出す。率だけでは判断できないという声があったため。
+    var sb = sb0, br = sb.ins, tx = sb.tax;
+    var line = function(name, v, note){{
+      return '<tr><td style="padding:4px 0">'+name+(note?'<br><span style="color:#6B6B76;font-size:.78rem">'+note+'</span>':'')
+        +'</td><td style="text-align:right;white-space:nowrap">'+yen(v)+' 円</td>'
+        +'<td style="text-align:right;color:#6B6B76;white-space:nowrap">月 '+yen(v/12)+'</td></tr>';
+    }};
+    h+='<div class="sec-title">年収'+yen(inc)+'円だと、いくら引かれるか</div>'
+      +'<div class="card" style="cursor:default"><table style="width:100%;font-size:.92rem;border-collapse:collapse">'
+      +'<tr style="color:#6B6B76;font-size:.8rem"><th style="text-align:left">項目</th><th style="text-align:right">年額</th><th style="text-align:right">月あたり</th></tr>'
+      +line('健康保険料', br.health, PR.value+'の料率 '+healthRate()+'%＋子ども・子育て支援金0.23%の半分')
+      +(A40.checked?line('介護保険料', br.kaigo, '40〜64歳。1.62%の半分'):'')
+      +line('厚生年金保険料', br.pension, '18.3%の半分')
+      +line('雇用保険料', br.koyo, '週20時間以上で加入。5/1000')
+      +line('所得税', tx.income, '復興特別所得税2.1%を含む')
+      +line('住民税', tx.resident, '所得割10%＋均等割5,000円＋森林環境税1,000円')
+      +'<tr style="border-top:1px solid #EFE7E1;font-weight:800"><td style="padding:6px 0">引かれる合計</td>'
+      +'<td style="text-align:right">'+yen(br.total+tx.income+tx.resident)+' 円</td>'
+      +'<td style="text-align:right;color:#6B6B76">月 '+yen((br.total+tx.income+tx.resident)/12)+'</td></tr>'
+      +'<tr style="font-weight:800;color:#F4643B"><td style="padding:6px 0">手取り(本人分)</td>'
+      +'<td style="text-align:right">'+yen(sb.net)+' 円</td>'
+      +'<td style="text-align:right">月 '+yen(sb.net/12)+'</td></tr>'
+      +'</table>'
+      +(insured(inc)?'':'<div class="d" style="margin-top:8px">いまは配偶者の扶養に入っているので、健康保険料と年金保険料の負担はありません。</div>')
+      +'</div>';
     h+='<div class="note">世帯の手取り合計(目安): <strong>'+yen(net(inc))+' 円</strong>'+
        (ins?'（社会保険料の負担が発生しています）':'')+'</div>';
     // 働き損の区間を知らせる
@@ -1787,7 +1871,7 @@ def build_kabe():
   }}
   S.addEventListener('input',update);
   HS.addEventListener('input',update);
-  [B,H,ST].forEach(function(e){{e.addEventListener('change',update);}});
+  [B,H,ST,PR,A40].forEach(function(e){{e.addEventListener('change',update);}});
   update();
 }})();
 </script>""")
