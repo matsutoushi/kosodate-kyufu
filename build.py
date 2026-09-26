@@ -106,7 +106,7 @@ def breadcrumb_ld(crumbs):
             + "</script>")
 
 
-def head(title, desc, path="/", crumbs=()):
+def head(title, desc, path="/", crumbs=(), robots=""):
     ga = ""
     if GA4_ID:
         ga = (f'<script async src="https://www.googletagmanager.com/gtag/js?id={GA4_ID}"></script>'
@@ -126,7 +126,7 @@ def head(title, desc, path="/", crumbs=()):
 <meta property="og:url" content="{BASE_URL}{path}">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-{f'<meta name="google-site-verification" content="{GSC_TOKEN}">' if GSC_TOKEN else ''}
+{f'<meta name="google-site-verification" content="{GSC_TOKEN}">' if GSC_TOKEN else ''}{f'<meta name="robots" content="{robots}">' if robots else ''}
 {breadcrumb_ld(crumbs) if crumbs else ''}
 {ga}
 <style>{CSS}</style>
@@ -1337,6 +1337,56 @@ def build_city_index(cities, iry_map, taiki_map, rank_map, group_pref, page_id, 
     return "".join(parts)
 
 
+def build_link(data):
+    """Instagramのプロフィールに貼る着地ページ。ボタンを大きく、1タップで目的地へ。
+    リールごとに誘導先が変わっても、プロフィールのリンクはここに固定しておける。
+    検索に出す必要はないので noindex。サイトマップにも入れない。"""
+    arts = (data.get("_articles") or [])[-3:][::-1]
+    btns = [
+        ("📊", "年収の壁シミュレーター",
+         "年収と都道府県を入れると、社会保険料・所得税・住民税がいくら引かれるか出ます",
+         "./kabe.html?from=ig"),
+        ("✅", "もらえる給付金しんだん",
+         "あてはまるものを選ぶだけ。受け取れる可能性のある制度が30秒で分かります",
+         "./shindan.html?from=ig"),
+        ("🗾", "お住まいの地域を調べる",
+         "子ども医療費が何歳まで無料か、保育園の待機児童は何人か。市区町村ごとに",
+         "./chiiki.html?from=ig"),
+        ("💰", "金額の早見表",
+         "出産・育児・教育でもらえるお金を、金額と申請先で一覧にしています",
+         "./ichiran.html?from=ig"),
+    ]
+    parts = [head(f"リンクまとめ｜{SITE_NAME}",
+                  "こそだて給付ナビの主なページへのリンクです。年収の壁シミュレーター、"
+                  "もらえる給付金しんだん、地域ごとの子育て支援を確認できます。",
+                  "/link.html", robots="noindex,follow")]
+    parts.append(f"""
+<header class="site"><div class="wrap"><a class="logo" href="./index.html?from=ig">{html.escape(SITE_NAME)}</a>
+<div class="tag">国と自治体の子育て支援を、一次情報で確認できるサイトです</div></div></header>
+<div class="wrap body">
+  <p style="text-align:center;color:var(--sub);font-size:.92rem;margin:16px 0 4px">
+  Instagramから来てくださった方へ。よく見られているページです。</p>""")
+    for em, t, d, href in btns:
+        parts.append(f"""<a class="card" href="{href}" style="display:block">
+  <div class="t">{em} {html.escape(t)}</div>
+  <div class="d" style="margin-top:4px">{html.escape(d)} →</div>
+</a>""")
+    if arts:
+        parts.append('<div class="sec-title">新しい記事</div>')
+        for a in arts:
+            parts.append(f"""<a class="card" href="./{a['id']}.html?from=ig" style="display:block">
+  <div class="t">{a.get('emoji','')} {html.escape(a['title'])}</div>
+  <div class="d" style="margin-top:4px">{html.escape(a['desc'][:70])}… →</div>
+</a>""")
+    parts.append("""
+  <a class="cta" href="./index.html?from=ig" style="display:block;text-align:center">サイトのトップを見る →</a>
+  <div class="note">金額や条件は制度改正で変わります。各ページに出典(こども家庭庁・厚生労働省・国税庁など)を
+  載せていますので、手続きの前に公式ページとお住まいの市区町村でご確認ください。</div>
+</div>""")
+    parts.append(footer())
+    return "".join(parts)
+
+
 def build_policy():
     """プライバシーポリシー・免責事項。GA4のCookie利用とアフィリエイト表記のために必要。"""
     parts = [head(f"プライバシーポリシー・免責事項｜{SITE_NAME}",
@@ -2197,6 +2247,9 @@ def main():
         f.write(build_ichiran(data))
     with open(os.path.join(SITE, "policy.html"), "w", encoding="utf-8") as f:
         f.write(build_policy())
+    # Instagramのプロフィール用(noindex・サイトマップには入れない)
+    with open(os.path.join(SITE, "link.html"), "w", encoding="utf-8") as f:
+        f.write(build_link(data))
 
     if data.get("_hikaku"):
         with open(os.path.join(SITE, "kakei.html"), "w", encoding="utf-8") as f:
