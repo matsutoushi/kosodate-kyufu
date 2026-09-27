@@ -348,8 +348,16 @@ def encode(frame_fn, duration, outdir, caption=""):
         frame_fn(i / FPS).save(os.path.join(tmp, f"{i:04d}.png"))
     out = os.path.join(outdir, "video.mp4")
     ff = imageio_ffmpeg.get_ffmpeg_exe()
+    # BGMを焼き込む。31本すべて音声トラックが無く、投稿時にアプリでも付けられなかったため、
+    # 権利の問題が起きない音をこちらで合成して入れる(pipeline/music.py)。
+    from music import make_bgm
+    wav = os.path.join(tmp, "bgm.wav")
+    make_bgm(wav, duration + 0.5)
     subprocess.run([ff, "-y", "-framerate", str(FPS), "-i", os.path.join(tmp, "%04d.png"),
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", out],
+                    "-i", wav,
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20",
+                    "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-shortest",
+                    "-movflags", "+faststart", out],
                    check=True, capture_output=True)
     shutil.rmtree(tmp, ignore_errors=True)
     if caption:
