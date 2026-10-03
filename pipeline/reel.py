@@ -3682,7 +3682,7 @@ CAPTION_TEDORI_179 = """【年収179万円でも、所得税は0円です】
 
 
 STORY["daredemo-tsuen"] = {
-    "emoji": "\U0001F6FC",
+    "emoji": "\U0001F37C",
     "hook": "保育園に通っていなくても\n月10時間あずけられます", "hook_size": 72,
     "cta": ("0〜2歳を育てている人に送ってください", "保存 して送る"),
     "scenes": [
