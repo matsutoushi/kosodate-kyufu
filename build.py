@@ -275,7 +275,7 @@ def build_index(data):
   <a class="card" href="./kabe.html" style="background:linear-gradient(135deg,#f7f9fc,#fff6f0)">
     <div class="t">🧱 「103万の壁」は、もうありません</div>
     <div class="s">いくらまで働くと得か、スライダーで試算できます</div>
-    <div class="d">2025年の改正で壁が動きました。106万・123万・160万のどれに当たるかを確認 →</div>
+    <div class="d">106万円の壁は2026年10月になくなりました。いまの壁は123万・130万・160万です →</div>
   </a>
 
   <a class="card" href="./chiiki.html" style="background:linear-gradient(135deg,#fff6f0,#f2faf8)">
@@ -1525,9 +1525,11 @@ def build_kabe():
       <div style="color:#6B6B76;font-size:.8rem;margin-bottom:6px">健康保険料率は都道府県で違います(協会けんぽ・令和8年度)。</div>
       <label style="display:block;margin-bottom:4px"><input type="checkbox" id="kAge40"> 40歳以上（介護保険料がかかる）</label>
       <div style="color:#6B6B76;font-size:.8rem;margin-top:8px;line-height:1.6">
-        上の3つは<strong>106万円の壁が効くかどうか</strong>を決める条件です。
-        「従業員50人超」と「週20時間以上」の<strong>両方</strong>にあてはまり、かつ学生でない場合だけ、
-        年収106万円で社会保険に加入します。どちらか一方でも外れると、壁は130万円まで動きます。
+        上の3つは<strong>勤務先の社会保険に入るかどうか</strong>を決める条件です。
+        <strong>2026年10月1日に「月額賃金8.8万円以上」の条件が撤廃されました</strong>。
+        「従業員50人超」と「週20時間以上」の両方にあてはまり、学生でなければ、
+        <strong>年収に関係なく加入します（106万円の壁はなくなりました）</strong>。
+        どちらか一方でも外れる場合は、配偶者の扶養から外れる130万円が分かれ目になります。
       </div>
     </div>
 
@@ -1549,8 +1551,8 @@ def build_kabe():
   <ul class="tips">
     <li><strong>123万円</strong> … 「配偶者控除」から「配偶者特別控除」に切り替わります。<strong>ただし控除額は満額のまま引き継がれるので、ここで手取りが減ることはありません</strong></li>
     <li><strong>160万円</strong> … 本人に所得税がかかり始め、<strong>配偶者特別控除もここから段階的に減り始めます</strong>。実質的な分かれ目はこちら</li>
-    <li><strong>130万円</strong> … 社会保険の扶養から外れます(従業員50人以下の勤務先などの場合)</li>
-    <li><strong>106万円</strong> … 従業員50人超・週20時間以上・月額8.8万円以上・学生でない、をすべて満たすと社会保険に加入します</li>
+    <li><strong>130万円</strong> … 配偶者の健康保険の扶養から外れます(週20時間未満、従業員50人以下の勤務先などの場合)</li>
+    <li><strong>106万円</strong> … <strong>2026年10月1日になくなりました</strong>。月額賃金8.8万円以上という条件が撤廃されたためです</li>
     <li><strong>201万5,999円</strong> … 配偶者特別控除もここで終わります</li>
   </ul>
 
@@ -1558,17 +1560,20 @@ def build_kabe():
   基礎控除が48万円から最大95万円に、給与所得控除の最低保障が55万円から65万円に引き上げられたためです。
   扶養に入れるかどうかの線は123万円に移りました。</div>
 
-  <div class="sec-title">106万円の壁は、これから消えていきます</div>
-  <p>社会保険の加入要件のうち<strong>月額賃金8.8万円以上という条件は、2025年6月から3年以内に撤廃</strong>されることが決まっています。
-  勤務先の規模の条件も段階的に下がります。</p>
+  <div class="sec-title">106万円の壁は、2026年10月になくなりました</div>
+  <p>社会保険の加入要件だった<strong>月額賃金8.8万円以上という条件が、2026年(令和8年)10月1日に撤廃</strong>されました。
+  最低賃金が上がり、週20時間働けばほとんどの地域でこの額を超えるようになったためです。
+  いまの加入要件は<strong>週20時間以上・従業員51人以上・学生でない・2か月を超える雇用の見込み</strong>の4つです。
+  勤務先の規模の条件も、これから段階的に下がります。</p>
   <ul class="tips">
     <li>2027年10月 … 従業員36人以上</li>
     <li>2029年10月 … 従業員21人以上</li>
     <li>2032年10月 … 従業員11人以上</li>
     <li>2035年10月 … 従業員10人以下も対象に</li>
   </ul>
-  <div class="note">📌 つまり将来的には、106万円の壁は「週20時間以上働くかどうか」だけで決まるようになります。
-  いま50人以下の職場で働いている方も、いずれ対象になります。</div>
+  <div class="note">📌 つまり、いま社会保険に入るかどうかは<strong>働く時間と勤務先の規模</strong>で決まります。
+  年収の額では決まりません。いま50人以下の職場で働いている方も、いずれ対象になります。
+  なお、配偶者の扶養に残れるかどうかの130万円は、健康保険の被扶養者の基準なので残ります。</div>
 
   <div class="sec-title">この試算の前提</div>
   <ul class="mis">
@@ -1621,7 +1626,7 @@ def build_kabe():
     <div class="d">16歳未満の子どもは扶養控除の対象外ですが、住民税の欄には記載が必要です →</div>
   </a>
   <a class="card" href="./nenshu-kabe.html">
-    <div class="t">📊 103万の壁はもうありません。いまの壁は106万・123万・160万</div>
+    <div class="t">📊 106万円の壁は2026年10月になくなりました</div>
     <div class="d">なぜ壁が動いたのか、配偶者控除と配偶者特別控除の関係を、国税庁と厚生労働省の資料にもとづいて解説しています →</div>
   </a>
 
@@ -1638,10 +1643,13 @@ def build_kabe():
   var yen=function(n){{return Math.round(n).toLocaleString('ja-JP');}};
 
   // 社会保険に入るかどうか(厚労省の要件)
+  // 2026年10月1日に賃金要件(月8.8万円)が撤廃され、106万円の壁は無くなった。
+  // 週20時間以上・従業員51人以上・学生でない、を満たせば年収に関係なく加入する。
+  // 満たさない場合は、配偶者の健康保険の扶養から外れる130万円が分かれ目。
   function insured(inc){{
     if(ST.checked) return false;                        // 学生は対象外
-    if(B.checked && H.checked && inc>=1060000) return true;  // 106万の壁
-    return inc>=1300000;                                // 130万の壁(扶養から外れる)
+    if(B.checked && H.checked) return true;             // 勤務先の社会保険に加入
+    return inc>=1300000;                                // 扶養から外れる(130万円)
   }}
   // 配偶者(働いている側)の合計所得ざっくり。給与所得控除を引いた額
   function partnerIncome(h){{
@@ -1796,7 +1804,7 @@ def build_kabe():
     ctx.textAlign='left';
 
     // 壁の縦線
-    var walls=[[1060000,'106万'],[1230000,'123万'],[1300000,'130万'],[1600000,'160万']];
+    var walls=[[1230000,'123万'],[1300000,'130万'],[1600000,'160万']];
     walls.forEach(function(w){{
       ctx.strokeStyle='#D9CEC6'; ctx.setLineDash([4,4]); ctx.beginPath();
       ctx.moveTo(sx(w[0]),PT); ctx.lineTo(sx(w[0]),Hh-PB); ctx.stroke(); ctx.setLineDash([]);
