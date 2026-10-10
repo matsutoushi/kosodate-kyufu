@@ -1973,6 +1973,23 @@ def build_article(a, articles=()):
             parts.append("</tbody></table></div>")
         if s.get("note"):
             parts.append(f'<div class="note">📌 {html.escape(s["note"])}</div>')
+        # 節の直後に申し込み先を置く。data/articles.json の節に "aff" を足すと出る。
+        # 記事から比較ページを経由させると1手ぶん落ちるので、季節ものだけ直接つなぐ。
+        if s.get("aff"):
+            parts.append('<div class="card" style="cursor:default">')
+            if s["aff"].get("lead"):
+                parts.append(f'<div class="d" style="margin-bottom:10px">'
+                             f'{html.escape(s["aff"]["lead"])}</div>')
+            for it in s["aff"]["items"]:
+                px = (f'<img src="{html.escape(it["pixel"])}" height="1" width="1" '
+                      f'border="0" alt="">') if it.get("pixel") else ""
+                parts.append(f'<a class="offbtn" href="{html.escape(it["url"])}" target="_blank" '
+                             f'rel="noopener sponsored nofollow">{px}{html.escape(it["label"])}</a>')
+            if s["aff"].get("compare"):
+                parts.append(f'<div class="d" style="margin-top:10px">'
+                             f'<a href="{html.escape(s["aff"]["compare"])}">'
+                             f'{html.escape(s["aff"].get("compare_text", "選び方をくらべる"))} →</a></div>')
+            parts.append("</div>")
 
     if a.get("faq"):
         parts.append('<div class="sec-title">よくある質問</div>')
