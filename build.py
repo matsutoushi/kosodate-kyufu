@@ -378,7 +378,9 @@ def build_program(p, data):
     e = p.get("_enrich") or {}
     timing = (f'<dt>いつ受け取れる?</dt><dd>{html.escape(e["timing"])}</dd>'
               if e.get("timing") else "")
-    parts = [head(f"{p['title']}｜{SITE_NAME}", p["summary"][:100], f"/{p['id']}.html",
+    # 検索結果に出る題は、制度名だけだとどのサイトとも同じになる。
+    # GSCで差が出たページだけ seo_title で上書きする(無ければ従来どおり制度名＋屋号)。
+    parts = [head(p.get("seo_title") or f"{p['title']}｜{SITE_NAME}", p["summary"][:100], f"/{p['id']}.html",
                   crumbs=[("ホーム", "/"), ("制度をさがす", "/ichiran.html"),
                           (p["title"], f"/{p['id']}.html")])]
     parts.append(f"""
