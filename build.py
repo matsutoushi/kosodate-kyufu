@@ -2082,6 +2082,12 @@ def build_hikaku(pg, all_pages=()):
                      if it.get("aff_pixel") else "")
             parts.append(f'<a class="offbtn" href="{html.escape(url)}" target="_blank" '
                          f'rel="noopener sponsored nofollow">{pixel}{html.escape(label)}</a>')
+        # 広告主によっては公式サイトへの誘導文言が掲載条件になっている(SoftBank Air)
+        if it.get("official_site"):
+            o = html.escape(it["official_site"])
+            parts.append(f'<div class="d" style="margin-top:10px;font-size:.78rem">'
+                         f'詳細は公式サイト(<a href="{o}" target="_blank" rel="noopener nofollow">{o}</a>)'
+                         f'でご確認ください。</div>')
         parts.append("</div>")
 
     parts.append('<div class="sec-title">子育て世帯の選び方のコツ</div><ul class="tips">')
