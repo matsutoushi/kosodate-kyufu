@@ -2082,6 +2082,18 @@ def build_hikaku(pg, all_pages=()):
                      if it.get("aff_pixel") else "")
             parts.append(f'<a class="offbtn" href="{html.escape(url)}" target="_blank" '
                          f'rel="noopener sponsored nofollow">{pixel}{html.escape(label)}</a>')
+        # 広告主が「この素材を使え」と指定してくる場合はバナーで置く(SoftBank Air)
+        if it.get("aff_banner"):
+            b = it["aff_banner"]
+            if b.get("lead"):
+                parts.append(f'<div class="d" style="margin-top:10px">{html.escape(b["lead"])}</div>')
+            parts.append(
+                f'<a href="https://ck.jp.ap.valuecommerce.com/servlet/referral?sid={VC_SID}&amp;pid={b["pid"]}" '
+                f'target="_blank" rel="noopener sponsored nofollow" '
+                f'style="display:block;margin-top:10px;text-align:center">'
+                f'<img src="https://ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid={VC_SID}&amp;pid={b["pid"]}" '
+                f'width="{b["w"]}" height="{b["h"]}" border="0" loading="lazy" '
+                f'alt="{html.escape(b.get("alt", ""))}" style="max-width:100%;height:auto"></a>')
         # 広告主によっては公式サイトへの誘導文言が掲載条件になっている(SoftBank Air)
         if it.get("official_site"):
             o = html.escape(it["official_site"])

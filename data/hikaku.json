@@ -506,11 +506,17 @@
       "契約前に提供エリアの確認が必要です"
      ],
      "notice": "契約期間の縛りがないことと、途中でやめてもお金がかからないことは別の話です。「解除料なし」でも端末代の残りは請求されます。何ヵ月で乗り換える可能性があるかを先に考えてください。",
-     "aff_url": "https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=3776805&pid=892687650",
-     "aff_pixel": "https://ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3776805&pid=892687650",
+     "aff_url": "",
+     "aff_pixel": "",
      "official": "",
-     "cta": "SoftBank Airの提供エリアを確認する",
-     "official_site": "https://www.softbank.jp/internet/"
+     "official_site": "https://www.softbank.jp/internet/",
+     "aff_banner": {
+      "pid": "892724484",
+      "w": 300,
+      "h": 250,
+      "alt": "SoftBank Air",
+      "lead": "提供エリアの確認と申し込みは、こちらから。"
+     }
     },
     {
      "name": "工事ができるなら、光回線のほうが安定します",
