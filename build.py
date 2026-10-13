@@ -1098,11 +1098,31 @@ def build_city(c, iry_map, taiki_map, rank_map, progs=()):
             det = " / ".join(f"{lb} {wa.get(k,0)}人" for k, lb in
                              (("0", "0歳"), ("1", "1歳"), ("2", "2歳"), ("3+", "3歳〜")) if wa.get(k, 0) > 0)
             parts.append(f'<p style="font-size:.9rem;color:var(--sub)">内訳: {det}</p>')
+            # 待機児童がいる自治体でだけ出す。入れなかった人がいま必要としている情報。
+            parts.append(
+                '<div class="localnote">'
+                '<strong>入れなかったときは、育休を延ばせます</strong><br>'
+                '保育園に入れなかった場合、育児休業給付金は最長2歳まで延長できます。'
+                'ただし申込みの時期と、入所保留通知書の受け取り方に条件があります。'
+                '落ちてから動くと間に合わないことがあります。<br>'
+                '<a href="./ikukyu-encho.html">▶ 育休を延長する条件と、やってはいけない申込み方</a>'
+                '</div>')
         else:
             parts.append('<p style="font-size:.9rem;color:var(--sub)">直近の調査では、希望しても入れなかった児童はいませんでした。ただし年度途中の入園は別なので、市の窓口で空き状況をご確認ください。</p>')
 
     if progs:
         parts.append(national_block(c["city"], progs))
+        # 表の金額は全国共通。読んだ人の次の疑問は「で、自分はいくら?」になる。
+        # シミュレーターは協会けんぽの都道府県別料率を持っているので、県を渡して開く。
+        parts.append(
+            '<div class="localnote">'
+            '<strong>働き方を変えると、手取りはいくら変わるか</strong><br>'
+            '上の金額はどこに住んでいても同じです。変わるのは社会保険料で、'
+            f'{html.escape(c["pref"])}の健康保険料率で計算すると結果が変わります。'
+            '年収を入れると、社会保険料と住民税の内訳まで出ます。<br>'
+            f'<a href="./kabe.html?pref={urllib.parse.quote(c["pref"])}">'
+            f'▶ {html.escape(c["pref"])}の料率で、年収の壁を計算する</a>'
+            '</div>')
 
     # 同じ県の近い規模の自治体。引っ越し先を比べる導線で、ページごとに中身が変わる。
     if c.get("neighbors"):
@@ -1722,6 +1742,11 @@ def build_kabe():
   var PREF_RATE = {{"北海道":10.28,"青森県":9.85,"岩手県":9.51,"宮城県":10.1,"秋田県":10.01,"山形県":9.75,"福島県":9.5,"茨城県":9.52,"栃木県":9.82,"群馬県":9.68,"埼玉県":9.67,"千葉県":9.73,"東京都":9.85,"神奈川県":9.92,"新潟県":9.21,"富山県":9.59,"石川県":9.7,"福井県":9.71,"山梨県":9.55,"長野県":9.63,"岐阜県":9.8,"静岡県":9.61,"愛知県":9.93,"三重県":9.77,"滋賀県":9.88,"京都府":9.89,"大阪府":10.13,"兵庫県":10.12,"奈良県":9.91,"和歌山県":10.06,"鳥取県":9.86,"島根県":9.94,"岡山県":10.05,"広島県":9.78,"山口県":10.15,"徳島県":10.24,"香川県":10.02,"愛媛県":9.98,"高知県":10.05,"福岡県":10.11,"佐賀県":10.55,"長崎県":10.06,"熊本県":10.08,"大分県":10.08,"宮崎県":9.77,"鹿児島県":10.13,"沖縄県":9.44}};
   var KODOMO=0.23, KAIGO=1.62, KOSEI=18.30, KOYO=0.5;
   var PR=document.getElementById('kPref'), A40=document.getElementById('kAge40');
+  // 市区町村ページから ?pref=◯◯県 で来たときは、その県を選んだ状態で開く
+  try{{
+    var _p=new URLSearchParams(location.search).get('pref');
+    if(_p && PREF_RATE[_p]) PR.value=_p;
+  }}catch(e){{}}
   function healthRate(){{ return PREF_RATE[PR.value] || 9.85; }}
   // 標準報酬月額の上限・下限だけ反映する(等級の刻みまでは追わない)
   function clampBase(m, lo, hi){{ return Math.min(hi, Math.max(lo, m)); }}
