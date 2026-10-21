@@ -488,7 +488,7 @@ def build_program(p, data):
                "shaho-menjo": ["shaho-getsumatsu"],
                "iryohi-kojo": ["iryohi-5nen", "furusato-onestop"],
                "kogaku-ryoyohi": ["kogaku-2nen"],
-               "shussan-ichijikin": ["shussan-2tsu"],
+               "shussan-ichijikin": ["shussan-2tsu", "mutsu-bunben-josei"],
                "shussan-teate": ["shussan-2tsu"],
                "jido-teate": ["jido-teate-dochira"],
                "kokunen-menjo": ["kokunen-ikuji-menjo"],
