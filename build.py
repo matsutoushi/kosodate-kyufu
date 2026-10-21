@@ -1026,7 +1026,9 @@ def city_meta(c, med, tk, rank):
     bits.append("市独自の給付金もまとめました。" if c.get("programs")
                 else "児童手当など全国共通の制度も確認できます。")
     desc = "".join(bits) or f"{name}の子育て支援をまとめました。"
-    return title, desc
+    # 手作業で入れた自治体は、そのページだけが持っている強みを題名に出せるようにする。
+    # (自動生成の題名は医療費の年齢で揃えてあるが、独自制度があるならそちらが効く)
+    return c.get("seo_title") or title, c.get("seo_desc") or desc
 
 
 def city_key(pref, city):
