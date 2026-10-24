@@ -1162,6 +1162,7 @@ def build_city(c, iry_map, taiki_map, rank_map, progs=()):
     <dt style="font-weight:800;font-size:.78rem;color:var(--accent);margin-top:8px">期限</dt>
     <dd style="margin:2px 0 0;font-size:.9rem">{html.escape(p['deadline'])}</dd>
   </dl>
+  {f'<div class="note">📌 {html.escape(p["note"])}</div>' if p.get('note') else ''}
   <a class="offbtn" href="{html.escape(p['url'])}" target="_blank" rel="noopener">市の公式ページで確認</a>
 </div>""")
 
