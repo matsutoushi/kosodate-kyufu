@@ -275,7 +275,7 @@ def build_index(data):
   <a class="card" href="./kabe.html" style="background:linear-gradient(135deg,#f7f9fc,#fff6f0)">
     <div class="t">🧱 「103万の壁」は、もうありません</div>
     <div class="s">いくらまで働くと得か、スライダーで試算できます</div>
-    <div class="d">106万円の壁は2026年10月になくなりました。いまの壁は123万・130万・160万です →</div>
+    <div class="d">年収の壁は令和8年分で動きました。いまの壁は136万・130万・178万です →</div>
   </a>
 
   <a class="card" href="./chiiki.html" style="background:linear-gradient(135deg,#fff6f0,#f2faf8)">
@@ -1516,7 +1516,7 @@ def build_kabe():
     社会保険料率と税率は概算なので、画面上で「目安」と明示すること。"""
     parts = [head(f"年収の壁シミュレーター｜{SITE_NAME}",
                   "妻(配偶者)の年収をスライダーで動かすと、世帯の手取りがどう変わるかがその場で分かります。"
-                  "123万・130万・160万の壁を国税庁と厚生労働省の資料にもとづいて整理しました。",
+                  "136万・130万・178万の壁を国税庁と厚生労働省の資料にもとづいて整理しました。",
                   "/kabe.html")]
     parts.append(f"""
 <header class="site"><div class="wrap"><a class="logo" href="./index.html">{html.escape(SITE_NAME)}</a></div></header>
@@ -1574,16 +1574,19 @@ def build_kabe():
 
   <div class="sec-title">いまの壁の一覧</div>
   <ul class="tips">
-    <li><strong>123万円</strong> … 「配偶者控除」から「配偶者特別控除」に切り替わります。<strong>ただし控除額は満額のまま引き継がれるので、ここで手取りが減ることはありません</strong></li>
-    <li><strong>160万円</strong> … 本人に所得税がかかり始め、<strong>配偶者特別控除もここから段階的に減り始めます</strong>。実質的な分かれ目はこちら</li>
+    <li><strong>136万円</strong> … 「配偶者控除」から「配偶者特別控除」に切り替わります。<strong>ただし控除額は満額のまま引き継がれるので、ここで手取りが減ることはありません</strong></li>
+    <li><strong>178万円</strong> … 本人に所得税がかかり始め、<strong>配偶者特別控除もここから段階的に減り始めます</strong>。実質的な分かれ目はこちら</li>
     <li><strong>130万円</strong> … 配偶者の健康保険の扶養から外れます(週20時間未満、従業員50人以下の勤務先などの場合)</li>
     <li><strong>106万円</strong> … <strong>2026年10月1日になくなりました</strong>。月額賃金8.8万円以上という条件が撤廃されたためです</li>
-    <li><strong>201万5,999円</strong> … 配偶者特別控除もここで終わります</li>
+    <li><strong>207万円</strong> … 配偶者特別控除もここで終わります</li>
   </ul>
 
   <div class="note">📌 <strong>103万円の壁は、もうありません。</strong>
-  基礎控除が48万円から最大95万円に、給与所得控除の最低保障が55万円から65万円に引き上げられたためです。
-  扶養に入れるかどうかの線は123万円に移りました。</div>
+  さらに<strong>令和8年分から金額が動きました</strong>。基礎控除が最大95万円から104万円に、
+  給与所得控除の最低保障が65万円から74万円に引き上げられたためです(令和8年12月1日施行・令和8年分から適用)。
+  扶養に入れるかどうかの線は123万円から<strong>136万円</strong>に、
+  本人に所得税がかかり始める線は160万円から<strong>178万円</strong>に移りました。
+  このページの計算はすべて令和8年分の金額で行っています。</div>
 
   <div class="sec-title">106万円の壁は、2026年10月になくなりました</div>
   <p>社会保険の加入要件だった<strong>月額賃金8.8万円以上という条件が、2026年(令和8年)10月1日に撤廃</strong>されました。
@@ -1678,7 +1681,7 @@ def build_kabe():
   }}
   // 配偶者(働いている側)の合計所得ざっくり。給与所得控除を引いた額
   function partnerIncome(h){{
-    var ded = h<=1900000 ? 650000
+    var ded = h<=2200000 ? 740000
             : h<=3600000 ? h*0.3+80000
             : h<=6600000 ? h*0.2+440000
             : h<=8500000 ? h*0.1+1100000 : 1950000;
@@ -1704,7 +1707,7 @@ def build_kabe():
     var b = partnerIncome(h);           // 相手の合計所得
     if(b>10000000) return {{amt:0, kind:'対象外'}};
     var col = b>9500000 ? 2 : b>9000000 ? 1 : 0;
-    if(a<=580000) return {{amt:[380000,260000,130000][col], kind:'配偶者控除'}};
+    if(a<=620000) return {{amt:[380000,260000,130000][col], kind:'配偶者控除'}};
     for(var i=0;i<SPOUSE_TABLE.length;i++){{
       if(a<=SPOUSE_TABLE[i][0]) return {{amt:SPOUSE_TABLE[i][1][col], kind:'配偶者特別控除'}};
     }}
@@ -1722,11 +1725,11 @@ def build_kabe():
   function lostDeduction(inc, h){{
     return spouseDeduction(h) - spouseAllowance(inc,h).amt;
   }}
-  // 基礎控除(令和7・8年分。合計所得で変わる)
+  // 基礎控除(令和8年分。合計所得で変わる)
+  // 本則62万円に、租税特別措置法の加算(489万円以下は42万、655万円以下は5万)が乗る
   function basicDed(a){{
-    return a<=1320000 ? 950000 : a<=3360000 ? 880000
-         : a<=4890000 ? 680000 : a<=6550000 ? 630000
-         : a<=23500000 ? 580000 : 0;
+    return a<=4890000 ? 1040000 : a<=6550000 ? 670000
+         : a<=23500000 ? 620000 : 0;
   }}
   // 所得税(超過累進)。課税所得から求める
   function incomeTax(t){{
@@ -1767,9 +1770,9 @@ def build_kabe():
     o.total = o.health+o.kaigo+o.pension+o.koyo;
     return o;
   }}
-  // 給与所得控除(令和7年分以後)
+  // 給与所得控除(令和8年分)
   function kyuyoDed(inc){{
-    if(inc<=1900000) return Math.min(inc, 650000);
+    if(inc<=2200000) return Math.min(inc, 740000);
     if(inc<=3600000) return inc*0.3+80000;
     if(inc<=6600000) return inc*0.2+440000;
     if(inc<=8500000) return inc*0.1+1100000;
@@ -1834,7 +1837,7 @@ def build_kabe():
     ctx.textAlign='left';
 
     // 壁の縦線
-    var walls=[[1230000,'123万'],[1300000,'130万'],[1600000,'160万']];
+    var walls=[[1360000,'136万'],[1300000,'130万'],[1780000,'178万']];
     walls.forEach(function(w){{
       ctx.strokeStyle='#D9CEC6'; ctx.setLineDash([4,4]); ctx.beginPath();
       ctx.moveTo(sx(w[0]),PT); ctx.lineTo(sx(w[0]),Hh-PB); ctx.stroke(); ctx.setLineDash([]);
@@ -1848,7 +1851,7 @@ def build_kabe():
     }});
     ctx.textAlign='left';
 
-    // 比較線: 所得税がなかった場合(160万円から実線と離れていくのが所得税の影響)
+    // 比較線: 所得税がなかった場合(178万円から実線と離れていくのが所得税の影響)
     ctx.strokeStyle='#9AA7B4'; ctx.lineWidth=2; ctx.setLineDash([6,5]); ctx.beginPath();
     for(var x2=0;x2<=max;x2+=5000){{
       var v2=net(x2,true);
@@ -1885,8 +1888,8 @@ def build_kabe():
     var inc=+S.value; L.textContent=yen(inc);
     var hInc=+HS.value; HL.textContent=yen(hInc);
     var ins=insured(inc), rows=[];
-    // 所得税の有無は「160万円を超えたか」ではなく、実際に計算した税額で判定する。
-    // 社会保険に入ると保険料が全額控除になるので、160万円を超えても0円のことがある。
+    // 所得税の有無は「178万円を超えたか」ではなく、実際に計算した税額で判定する。
+    // 社会保険に入ると保険料が全額控除になるので、178万円を超えても0円のことがある。
     var sb0 = selfBreak(inc), hasTax = sb0.tax.income > 0;
     // スライダーのすぐ下に要点だけ出す(グラフまでスクロールしなくても分かるように)
     var ok=function(b,s){{return '<span style="color:'+(b?'#3F6F69':'#D14757')+'">'+s+'</span>';}};
@@ -1898,12 +1901,12 @@ def build_kabe():
       if(r.kind==='対象外') return ['控除なし(配偶者の所得が1,000万円超)', false,
         '配偶者の合計所得が1,000万円を超えているため、働く側の年収にかかわらず受けられません。'];
       if(r.kind==='控除なし') return ['控除なし(働く側の所得が133万円超)', false,
-        '給与だけなら年収201万5,999円を超えた状態です。配偶者特別控除もここで終わりです。'];
+        '給与だけなら年収207万円を超えた状態です。配偶者特別控除もここで終わりです。'];
       if(r.kind==='配偶者控除') return ['配偶者控除 '+man(r.amt), true,
-        '働く側の合計所得が58万円以下(給与なら123万円以下)なのでこちらです。'];
+        '働く側の合計所得が62万円以下(給与なら136万円以下)なのでこちらです。'];
       return ['配偶者特別控除 '+man(r.amt)+(r.amt<full?'（満額'+man(full)+'から減っています）':''),
         r.amt>=full,
-        '123万円を超えると配偶者特別控除に切り替わります。控除額は満額のまま160万円まで続き、'
+        '136万円を超えると配偶者特別控除に切り替わります。控除額は満額のまま178万円まで続き、'
         +'そこから5万円刻みで段階的に減っていきます。'];
     }}
     var sp = spouseStatus(inc, hInc);
@@ -1915,7 +1918,7 @@ def build_kabe():
     rows.push(['配偶者の控除', sp[0], sp[1], sp[2]]);
     rows.push(['本人の所得税', hasTax ? 'かかります（年 '+yen(sb0.tax.income)+' 円）' : 'かかりません',
                !hasTax, hasTax ? '' :
-               (ins ? '社会保険料が全額控除になるため、160万円を超えていてもかからない場合があります。' : '')]);
+               (ins ? '社会保険料が全額控除になるため、178万円を超えていてもかからない場合があります。' : '')]);
     rows.push(['社会保険', ins ? '自分で加入します' : '扶養のままです', !ins]);
     var h='<div class="sec-title">この年収だとどうなるか</div>';
     rows.forEach(function(r){{
