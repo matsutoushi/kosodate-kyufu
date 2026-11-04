@@ -46,6 +46,21 @@ KAKEI_WHY = {
 KAKEI_N = len(KAKEI_ORDER)
 
 
+def related_article_card(prog, articles):
+    """制度に1本だけ紐づける解説記事。programs.json に "article" を足すと出る。
+    kakei.html への導線(related_card)は広告まとめなので、読み物はこちらに分ける。"""
+    aid = prog.get("article")
+    if not aid:
+        return ""
+    a = {x["id"]: x for x in (articles or [])}.get(aid)
+    if not a:
+        return ""
+    return ('<div class="sec-title">この制度を受ける年に、知っておきたいこと</div>'
+            f'<a class="card" href="./{a["id"]}.html">'
+            f'<div class="t">{a.get("emoji", "")} {html.escape(a["title"])}</div>'
+            f'<div class="d">{html.escape(a["desc"][:80])}… →</div></a>')
+
+
 def related_card(prog_id=None, hikaku_pages=()):
     """制度ページ下部の導線。制度ごとに広告を紐づけると不自然になるため、
     「家計を軽くする」まとめページ1本に集約する。"""
@@ -504,6 +519,7 @@ def build_program(p, data):
             parts.append(f'<a class="card" href="./{_a["id"]}.html">'
                          f'<div class="t">{_a.get("emoji","")} {html.escape(_a["title"])}</div>'
                          f'<div class="d">{html.escape(_a["desc"][:80])}… →</div></a>')
+    parts.append(related_article_card(p, data.get("_articles") or []))
     parts.append(related_card(p["id"], data.get("_hikaku") or []))
     parts.append("</div>")
     parts.append(footer())
@@ -1978,6 +1994,131 @@ def build_kabe():
     return "".join(parts)
 
 
+# 育休中のふるさと納税の上限額。計算式は総務省の「控除の仕組み」に従う:
+#   上限 =(住民税所得割額 × 20%)÷(90% − 所得税率 × 1.021)+ 2,000円
+# 税率と控除額は build_kabe と同じ令和8年分の値(一次情報は1か所にまとめる)。
+# 育休の年に特有なのは2つ。給付金が非課税なので課税給与は働いた月の分だけ、
+# 社会保険料も育休中は免除なので働いた月数ぶんしか乗らない。
+def furusato_sim():
+    return """
+  <div class="card" id="fsim" style="cursor:default">
+    <div class="t">育休中のふるさと納税 上限額シミュレーター</div>
+    <div class="d" style="margin:6px 0 14px">
+      育児休業給付金・出産手当金は非課税なので入力しません。<strong>給与として受け取る分だけ</strong>を入れてください。
+    </div>
+
+    <label style="display:block;font-weight:700;margin-bottom:6px">今年、給与が出る(出た)月数
+      <span id="fsM" style="color:#F4643B;font-size:1.3rem">6</span> か月</label>
+    <input id="fsMonths" type="range" min="0" max="12" step="1" value="6"
+           style="width:100%;accent-color:#FF8A65;height:28px">
+    <div style="display:flex;justify-content:space-between;font-size:.75rem;color:#6B6B76">
+      <span>0か月(年間ずっと育休)</span><span>12か月</span></div>
+
+    <label style="display:block;font-weight:700;margin:16px 0 4px">1か月あたりの給与(額面・円)</label>
+    <input id="fsPay" type="number" value="250000" step="10000" min="0"
+           style="width:100%;font-size:1rem;padding:8px;border-radius:8px;border:1px solid #E2D8CE">
+
+    <label style="display:block;font-weight:700;margin:14px 0 4px">年内に出る賞与(額面・合計)・円</label>
+    <input id="fsBonus" type="number" value="0" step="10000" min="0"
+           style="width:100%;font-size:1rem;padding:8px;border-radius:8px;border:1px solid #E2D8CE">
+
+    <label style="display:block;font-weight:700;margin:14px 0 4px">お住まいの都道府県
+      <select id="fsPref" style="width:100%;font-size:1rem;padding:8px;border-radius:8px;border:1px solid #E2D8CE"><option value="北海道">北海道</option><option value="青森県">青森県</option><option value="岩手県">岩手県</option><option value="宮城県">宮城県</option><option value="秋田県">秋田県</option><option value="山形県">山形県</option><option value="福島県">福島県</option><option value="茨城県">茨城県</option><option value="栃木県">栃木県</option><option value="群馬県">群馬県</option><option value="埼玉県">埼玉県</option><option value="千葉県">千葉県</option><option value="東京都" selected>東京都</option><option value="神奈川県">神奈川県</option><option value="新潟県">新潟県</option><option value="富山県">富山県</option><option value="石川県">石川県</option><option value="福井県">福井県</option><option value="山梨県">山梨県</option><option value="長野県">長野県</option><option value="岐阜県">岐阜県</option><option value="静岡県">静岡県</option><option value="愛知県">愛知県</option><option value="三重県">三重県</option><option value="滋賀県">滋賀県</option><option value="京都府">京都府</option><option value="大阪府">大阪府</option><option value="兵庫県">兵庫県</option><option value="奈良県">奈良県</option><option value="和歌山県">和歌山県</option><option value="鳥取県">鳥取県</option><option value="島根県">島根県</option><option value="岡山県">岡山県</option><option value="広島県">広島県</option><option value="山口県">山口県</option><option value="徳島県">徳島県</option><option value="香川県">香川県</option><option value="愛媛県">愛媛県</option><option value="高知県">高知県</option><option value="福岡県">福岡県</option><option value="佐賀県">佐賀県</option><option value="長崎県">長崎県</option><option value="熊本県">熊本県</option><option value="大分県">大分県</option><option value="宮崎県">宮崎県</option><option value="鹿児島県">鹿児島県</option><option value="沖縄県">沖縄県</option></select></label>
+
+    <label style="display:block;margin:14px 0 4px">
+      <input id="fsSpouse" type="checkbox"> 配偶者を扶養に入れる(配偶者の給与が年136万円以下)</label>
+    <div class="d" style="font-size:.78rem;margin-bottom:8px">
+      夫名義で寄付する場合、妻が育休に入って収入が下がるとここに当てはまります。配偶者控除を使うぶん、夫の上限額は下がります。
+    </div>
+
+    <label style="display:block;font-weight:700;margin:10px 0 4px">16歳以上の扶養親族
+      <select id="fsFuyo" style="width:100%;font-size:1rem;padding:8px;border-radius:8px;border:1px solid #E2D8CE">
+        <option value="0">0人</option><option value="1">1人</option>
+        <option value="2">2人</option><option value="3">3人</option></select></label>
+    <div class="d" style="font-size:.78rem">15歳以下の子どもは数えません。扶養控除の対象ではないので、上限額に影響しません。</div>
+
+    <div id="fsOut" style="margin-top:18px;padding:14px;border-radius:12px;background:#FFF6F0"></div>
+    <div class="d" style="font-size:.76rem;margin-top:10px;color:#6B6B76">
+      社会保険料は協会けんぽ令和8年度の都道府県別料率・厚生年金18.3%・雇用保険0.5%から出した目安です。
+      住宅ローン控除・医療費控除・iDeCoは含んでいません。使う年は、実際の上限額はこれより下がります。
+      所得税率は住民税の課税所得から人的控除の差を調整して求めるため、実際の判定と1段階ずれることがあります。
+      目安として見て、少なめに寄付してください。
+    </div>
+  </div>
+<script>
+(function(){
+  var PREF_RATE = {"北海道":10.28,"青森県":9.85,"岩手県":9.51,"宮城県":10.1,"秋田県":10.01,"山形県":9.75,"福島県":9.5,"茨城県":9.52,"栃木県":9.82,"群馬県":9.68,"埼玉県":9.67,"千葉県":9.73,"東京都":9.85,"神奈川県":9.92,"新潟県":9.21,"富山県":9.59,"石川県":9.7,"福井県":9.71,"山梨県":9.55,"長野県":9.63,"岐阜県":9.8,"静岡県":9.61,"愛知県":9.93,"三重県":9.77,"滋賀県":9.88,"京都府":9.89,"大阪府":10.13,"兵庫県":10.12,"奈良県":9.91,"和歌山県":10.06,"鳥取県":9.86,"島根県":9.94,"岡山県":10.05,"広島県":9.78,"山口県":10.15,"徳島県":10.24,"香川県":10.02,"愛媛県":9.98,"高知県":10.05,"福岡県":10.11,"佐賀県":10.55,"長崎県":10.06,"熊本県":10.08,"大分県":10.08,"宮崎県":9.77,"鹿児島県":10.13,"沖縄県":9.44};
+  var KODOMO=0.23, KOSEI=18.30, KOYO=0.5;
+  var M=document.getElementById('fsMonths'), PAY=document.getElementById('fsPay'),
+      BN=document.getElementById('fsBonus'), PR=document.getElementById('fsPref'),
+      SP=document.getElementById('fsSpouse'), FY=document.getElementById('fsFuyo'),
+      OUT=document.getElementById('fsOut'), MLABEL=document.getElementById('fsM');
+  if(!M) return;
+  // 給与所得控除(令和8年分)
+  function kyuyoDed(inc){
+    if(inc<=2200000) return Math.min(inc, 740000);
+    if(inc<=3600000) return inc*0.3+80000;
+    if(inc<=6600000) return inc*0.2+440000;
+    if(inc<=8500000) return inc*0.1+1100000;
+    return 1950000;
+  }
+  // 基礎控除(令和8年分。合計所得で変わる)
+  function basicDed(a){
+    return a<=4890000 ? 1040000 : a<=6550000 ? 670000 : a<=23500000 ? 620000 : 0;
+  }
+  function rate(t){
+    if(t<=0) return 0;
+    if(t<=1950000)  return 0.05;
+    if(t<=3300000)  return 0.10;
+    if(t<=6950000)  return 0.20;
+    if(t<=9000000)  return 0.23;
+    if(t<=18000000) return 0.33;
+    if(t<=40000000) return 0.40;
+    return 0.45;
+  }
+  function yen(n){ return Math.round(n).toLocaleString('ja-JP'); }
+  function calc(){
+    var months = +M.value, pay = Math.max(0,+PAY.value||0), bonus = Math.max(0,+BN.value||0);
+    MLABEL.textContent = months;
+    var income = pay*months + bonus;                 // 課税される給与(年間)
+    // 社会保険料。育休中は免除なので、給与が出る月数ぶんだけ乗せる
+    var hr = (PREF_RATE[PR.value]||9.85);
+    var r = (hr+KODOMO)/2/100 + KOSEI/2/100 + KOYO/100;
+    var ins = income * r;
+    var a = Math.max(0, income - kyuyoDed(income));  // 給与所得
+    var spouseI = SP.checked ? 380000 : 0, spouseJ = SP.checked ? 330000 : 0;
+    var fuyo = +FY.value;
+    // 所得税の課税所得と、そこから決まる税率
+    var tiI = Math.max(0, a - ins - basicDed(a) - spouseI - fuyo*380000);
+    var rt = rate(tiI);
+    // 住民税の所得割額(基礎控除43万。合計所得45万円以下なら非課税)
+    var tiJ = Math.max(0, a - ins - 430000 - spouseJ - fuyo*330000);
+    var shotokuwari = a<=450000 ? 0 : tiJ*0.10;
+    var limit = shotokuwari<=0 ? 0 : shotokuwari*0.20/(0.90 - rt*1.021) + 2000;
+    var out = '<div style="font-size:.8rem;color:#6B6B76">課税される給与(年間)</div>'
+      + '<div style="font-weight:700;margin-bottom:8px">' + yen(income) + ' 円</div>'
+      + '<div style="font-size:.8rem;color:#6B6B76">社会保険料(目安) ' + yen(ins) + ' 円'
+      + ' ／ 住民税の所得割額(目安) ' + yen(shotokuwari) + ' 円</div>';
+    if(limit < 2000){
+      out += '<div style="margin-top:12px;font-size:1.25rem;font-weight:800;color:#C94A2B">上限額 0円</div>'
+        + '<div style="margin-top:6px">今年あなたの名義で寄付すると、<strong>全額が自己負担</strong>になります。'
+        + '差し引く住民税がないためです。働いている配偶者の名義で、その人の上限額で寄付してください。</div>';
+    } else {
+      out += '<div style="margin-top:12px;font-size:.8rem;color:#6B6B76">ふるさと納税の上限額(目安)</div>'
+        + '<div style="font-size:1.7rem;font-weight:800;color:#C94A2B">' + yen(limit) + ' 円</div>'
+        + '<div style="margin-top:6px">見込みで計算しているので、<strong>8割の ' + yen(limit*0.8)
+        + ' 円</strong>までに抑えておくと、超過して自己負担になる失敗を避けられます。</div>';
+    }
+    OUT.innerHTML = out;
+  }
+  [M,PAY,BN,PR,SP,FY].forEach(function(e){
+    e.addEventListener('input', calc); e.addEventListener('change', calc);
+  });
+  calc();
+})();
+</script>"""
+
+
 def build_article(a, articles=()):
     """解説記事ページ。制度でも比較でもない読み物を汎用に描く。
     data/articles.json に足すだけでページが増える(将来の税金まわりもここに置く)。"""
@@ -2012,6 +2153,9 @@ def build_article(a, articles=()):
             parts.append("</tbody></table></div>")
         if s.get("note"):
             parts.append(f'<div class="note">📌 {html.escape(s["note"])}</div>')
+        # 節の中に計算ツールを置く。data/articles.json の節に "tool" を足すと出る。
+        if s.get("tool") == "furusato-sim":
+            parts.append(furusato_sim())
         # 節の直後に申し込み先を置く。data/articles.json の節に "aff" を足すと出る。
         # 記事から比較ページを経由させると1手ぶん落ちるので、季節ものだけ直接つなぐ。
         if s.get("aff"):
