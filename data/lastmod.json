@@ -1,7 +1,7 @@
 {
 "/": {
 "date": "2026-11-04",
-"hash": "b7581564a957537d7decf1f678338d26"
+"hash": "349c7421e54e0018908dd768a1afe941"
 },
 "/chiiki-list.html": {
 "date": "2026-11-04",
@@ -4065,7 +4065,11 @@
 },
 "/furusato-jogen.html": {
 "date": "2026-11-04",
-"hash": "5dacc827554546439d45a8c5a45e2ed3"
+"hash": "936e456024a079286ecb606321ea58be"
+},
+"/furusato-omutsu.html": {
+"date": "2026-11-04",
+"hash": "f59564dc484166c658a193b657c8b270"
 },
 "/furusato-onestop.html": {
 "date": "2026-11-04",
@@ -4081,7 +4085,7 @@
 },
 "/hikaku-furusato.html": {
 "date": "2026-11-04",
-"hash": "af02ccd7cea7555b39f5efcd20fd5049"
+"hash": "e94c6f52f462e69e3a6fa208527614fc"
 },
 "/hikaku-kawanai.html": {
 "date": "2026-09-21",
