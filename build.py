@@ -1039,6 +1039,15 @@ def city_key(pref, city):
     return (pref, city.replace("ヶ", "ケ").replace("ヵ", "カ"))
 
 
+# 給食費のように申請期限そのものが無い制度は、「—」ではなく行ごと出さない
+def deadline_row(p):
+    d = (p.get("deadline") or "").strip()
+    if not d or d == "—":
+        return ""
+    return ('<dt style="font-weight:800;font-size:.78rem;color:var(--accent);margin-top:8px">期限</dt>'
+            f'<dd style="margin:2px 0 0;font-size:.9rem">{html.escape(d)}</dd>')
+
+
 def build_city(c, iry_map, taiki_map, rank_map, progs=()):
     """自治体ページ。全国データ(医療費・保育園)＋手作業で調べた市独自の支援。"""
     key = city_key(c["pref"], c["city"])
@@ -1159,8 +1168,7 @@ def build_city(c, iry_map, taiki_map, rank_map, progs=()):
     <dd style="margin:2px 0 0;font-size:.9rem">{html.escape(p['target'])}</dd>
     <dt style="font-weight:800;font-size:.78rem;color:var(--accent);margin-top:8px">申請</dt>
     <dd style="margin:2px 0 0;font-size:.9rem">{html.escape(p['how'])}</dd>
-    <dt style="font-weight:800;font-size:.78rem;color:var(--accent);margin-top:8px">期限</dt>
-    <dd style="margin:2px 0 0;font-size:.9rem">{html.escape(p['deadline'])}</dd>
+    {deadline_row(p)}
   </dl>
   {f'<div class="note">📌 {html.escape(p["note"])}</div>' if p.get('note') else ''}
   <a class="offbtn" href="{html.escape(p['url'])}" target="_blank" rel="noopener">市の公式ページで確認</a>
