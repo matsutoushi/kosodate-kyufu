@@ -1209,6 +1209,87 @@ def pref_id(pref):
     return "pref-" + pref
 
 
+# 出産〜3歳までに受け取る金額の合計。県ページの<title>が「いくら」と
+# 約束しているのに、本文に合計が無かったので足した。
+#
+# 金額の根拠(いずれも令和8年度の確定値):
+#   出産育児一時金   50万円(全国一律)
+#   妊婦のための支援給付 妊娠時5万円＋胎児の数×5万円 → 単胎で10万円
+#   出産手当金       標準報酬月額÷30×2/3×98日(産前42日＋産後56日)
+#   育児休業給付金   休業開始時賃金日額×67%×180日＋×50%×残り
+#                    産後休業56日の翌日から1歳の誕生日前日まで = 約307日
+#                    上限(厚労省 LL080731保02 令和8年8月1日〜):
+#                      休業開始時の賃金月額 上限496,200円(日額16,540円)
+#                      支給上限 67%なら332,454円/月、50%なら248,100円/月
+#   児童手当         0〜2歳は月1.5万円 → 3年で54万円
+#
+# 標準報酬月額は等級で丸められるが、ここでは月給をそのまま使う。
+# 画面に「目安」と明記しているので、等級のずれは許容する。
+MONTHLY_CASES = (200000, 250000, 300000)
+IKUKYU_DAYS = 307          # 産後休業あけ〜1歳の誕生日前日
+IKUKYU_DAY_CAP = 16540     # 休業開始時賃金日額の上限(496,200円÷30)
+SHUSSAN_DAYS = 98          # 産前42日＋産後56日
+ICHIJIKIN = 500000
+NINPU_KYUFU = 100000
+JIDO_0_2 = 15000 * 36      # 0〜2歳の3年分
+
+
+def _shussan_teate(monthly):
+    return monthly / 30 * 2 / 3 * SHUSSAN_DAYS
+
+
+def _ikukyu(monthly):
+    day = min(monthly / 30, IKUKYU_DAY_CAP)
+    first = min(IKUKYU_DAYS, 180)
+    return day * 0.67 * first + day * 0.50 * max(0, IKUKYU_DAYS - first)
+
+
+def _man(yen):
+    """万円に丸める。端数は切り捨てて、少なめに見せる。"""
+    return int(yen // 10000)
+
+
+def total_block(pref):
+    rows = []
+    for m in MONTHLY_CASES:
+        st, ik = _shussan_teate(m), _ikukyu(m)
+        total = ICHIJIKIN + NINPU_KYUFU + st + ik + JIDO_0_2
+        rows.append(
+            f'<tr><td>月給 {m // 10000}万円</td>'
+            f'<td><strong>約{_man(total)}万円</strong></td></tr>')
+    sub = ICHIJIKIN + NINPU_KYUFU + JIDO_0_2
+    body = "".join(rows)
+    p = html.escape(pref)
+    return f"""
+  <div class="sec-title">💰 {p}で出産すると、合計いくらもらえるか</div>
+  <p style="font-size:.92rem;color:var(--sub)">第1子・単胎で、育休を1歳まで取った場合の目安です。
+  下の金額は<strong>全国どこでも同じ</strong>で、{p}だから増えたり減ったりはしません。</p>
+
+  <div class="card" style="cursor:default">
+    <div class="t">会社員で、産休・育休を取る場合</div>
+    <div class="tbwrap"><table class="tb" style="min-width:0"><thead><tr>
+      <th>月給(額面)</th><th>3歳までの合計</th>
+    </tr></thead><tbody>{body}</tbody></table></div>
+    <div class="d" style="margin-top:10px">内訳は、月給25万円の場合で
+    出産育児一時金50万円＋妊婦のための支援給付10万円＋出産手当金{_man(_shussan_teate(250000))}万円
+    ＋育児休業給付金{_man(_ikukyu(250000))}万円＋児童手当の0〜2歳分54万円です。
+    出産手当金と育児休業給付金だけが月給で変わり、あとの3つは誰でも同じ額です。</div>
+  </div>
+
+  <div class="card" style="cursor:default">
+    <div class="t">扶養内のパート・自営業・専業主婦(夫)の場合</div>
+    <div class="amount">約{_man(sub)}万円</div>
+    <div class="d">出産育児一時金50万円＋妊婦のための支援給付10万円＋児童手当の0〜2歳分54万円。
+    出産手当金と育児休業給付金は、雇用保険や健康保険に入って働いている人の制度なので入りません。</div>
+  </div>
+
+  <div class="note">📌 目安です。出産手当金と育児休業給付金は、月給そのものではなく
+  標準報酬月額や休業開始時賃金日額で計算するため、実際の額は数万円ずれます。
+  育休を1歳より早く切り上げれば減り、保育園に入れずに延長すれば増えます。
+  産休・育休中は社会保険料が免除されるので、手取りで見るとこの表より有利になります。</div>
+"""
+
+
 def build_pref(pref, meds, tks, id_of, progs=()):
     """都道府県ページ。
 
@@ -1239,10 +1320,15 @@ def build_pref(pref, meds, tks, id_of, progs=()):
         title = cand
         if len(title) <= 32:
             break
-    desc = (f"{pref}で出産してもらえるお金のうち、出産育児一時金50万円などの国の制度は"
-            f"全国同じ額です。{pref}で変わるのは子ども医療費助成で、{n}市区町村のうち"
+    emp = _man(ICHIJIKIN + NINPU_KYUFU + _shussan_teate(250000)
+                + _ikukyu(250000) + JIDO_0_2)
+    sub_total = _man(ICHIJIKIN + NINPU_KYUFU + JIDO_0_2)
+    desc = (f"{pref}で出産してもらえるお金は、会社員で月給25万円なら3歳までに合計 約{emp}万円、"
+            f"扶養内のパートや自営業なら約{sub_total}万円が目安です(出産育児一時金50万円・"
+            f"妊婦のための支援給付10万円・出産手当金・育休給付金・児童手当の合計)。"
+            f"この額は全国共通で、{pref}で変わるのは子ども医療費助成です。{n}市区町村のうち"
             f"{top_age}までが{top_age_n}件、所得制限も自己負担もないのが{len(free)}件。"
-            f"保育所の申込{apply_sum:,}人・待機児童{wait_sum}人。市区町村ごとに比べられます。")
+            f"保育所の申込{apply_sum:,}人・待機児童{wait_sum}人。")
 
     parts = [head(title, desc, f"/{urllib.parse.quote(pref_id(pref))}.html",
                   crumbs=[("ホーム", "/"), ("地域で調べる", "/chiiki.html"),
@@ -1256,6 +1342,8 @@ def build_pref(pref, meds, tks, id_of, progs=()):
   <p>{html.escape(pref)}で出産したときに受け取れるお金は、大きく2つに分かれます。
   <strong>全国どこでも同じ額のもの</strong>と、<strong>市区町村ごとに違うもの</strong>です。
   金額がいくらになるかは、ほとんどが前者で決まります。</p>""")
+
+    parts.append(total_block(pref))
 
     if progs:
         parts.append(national_block(pref, progs))
